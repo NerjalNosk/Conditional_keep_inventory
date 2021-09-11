@@ -1,0 +1,6 @@
+{
+  "gamerule.conditionalKeepInventory": "Conditional KeepInventory",
+  "gamerule.conditionalKeepInventory.description": "Toggles the Conditional KeepInventory mod, which allows to add conditions to whether you drop or not your items on death",
+  "gamerule.conditionalDoVanishing": "Conditional KeepInventory do vanishing",
+  "gamerule.conditionalDoVanishing.description": "Do Curse of Vanishing on death despite keeping the stuff with Conditional KeeInventory"
+}

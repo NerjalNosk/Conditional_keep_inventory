@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.nerjal.keepInventory.mixins",
+  "compatibilityLevel": "JAVA_16",
+  "mixins": [
+    "LivingEntityMixin",
+    "PlayerDeathMixin",
+    "ServerPlayerDeathMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
