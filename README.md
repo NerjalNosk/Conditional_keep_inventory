@@ -124,7 +124,7 @@ _Note: this mod requires the Fabric API. Check out the **Links** section for mor
 
 ### Links
 
- * [CurseForge]()
+ * [CurseForge](https://www.curseforge.com/minecraft/mc-mods/conditional-keep-inventory)
  * Modrinth (yet to come)
  * [Fabric API (modrinth)](https://modrinth.com/mod/fabric-api)
  * [Fabric API (curseforge)](https://www.curseforge.com/minecraft/mc-mods/fabric-api)
