@@ -50,19 +50,20 @@
       **Warning!** You can let any of the `killer_entity`, `source`, `projectile` or `held_item` missing from a condition, but a condition with none of them will be skipped, even in the config data parsing, and would therefore not be reachable in-game.
     **Other warning!** You may add whatever else you want into the file, the mod won't take it in consideration. But as soon as the server shuts down, it will all get deleted as the mod would overwrite the file.
 
-  Example of config file: *the "_" properties only are here used as comments*
+  Example of config file:\
+       *the "_" properties only are here used as comments*
 ```json
 {
-	"enabled":true,
-	"doVanishingCurse":true, 
+  "enabled":true,
+  "doVanishingCurse":true, 
   "_":"makes the Curse of Vanishing enchant take effect if a whitelist death event gets triggered",
-	"whitelist":[
-		{
-			"id":1,
-			"toggle":true,
-			"source":"drown",
+  "whitelist":[
+    {
+      "id":1,
+      "toggle":true,
+      "source":"drown",
       "_":"applies when the player drowns, regardless of all other elements"
-		},
+    },
     {
       "id":2,
       "toggle":false,
@@ -72,15 +73,15 @@
       "held_item": "bow",
       "_":"would have triggered only when the player gets shot by an arrow fired by a skeleton holding a bow it its main hand, if the toggle wasn't false"
     }
-	],
-	"blacklist":[
-		{
-			"id":1,
-			"toggle":true,
-			"source":"anvil",
+  ],
+  "blacklist":[
+    {
+      "id":1,
+      "toggle":true,
+      "source":"anvil",
       "_":"applies when the player is squashed by an anvil, regardless of all other elements"
-		}
-	]
+    }
+  ]
 }
 ```
 
