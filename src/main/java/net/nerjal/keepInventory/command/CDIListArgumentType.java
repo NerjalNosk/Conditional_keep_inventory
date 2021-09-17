@@ -8,7 +8,6 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.command.CommandSource;
-import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.LiteralText;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +37,7 @@ public class CDIListArgumentType implements ArgumentType<String> {
 
     @Override
     public String parse(@NotNull StringReader reader) throws CommandSyntaxException {
-        String val = reader.readStringUntil(' ');
+        String val = reader.readUnquotedString();
         return switch (val) {
             case "Whitelist", "Blacklist" -> val;
             default -> throw UNKNOWN_LIST.create(val);

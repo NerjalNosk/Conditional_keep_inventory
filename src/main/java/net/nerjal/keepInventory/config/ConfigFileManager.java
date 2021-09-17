@@ -193,7 +193,7 @@ public class ConfigFileManager {
         config.add("blacklist",bl);
         try {
             FileWriter file = new FileWriter("config/conditionalKeepInventory.json");
-            String configStr = config.toString();
+            String configStr = new Gson().toJson(config);
             file.write(configStr);
             file.close();
         } catch (IOException e) {
@@ -204,7 +204,7 @@ public class ConfigFileManager {
     public static boolean backupConfig() {
         String fileName = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(Calendar.getInstance().getTime());
         Path backupDest = Paths.get(String.format("config/backups/conditionalKeepInventory/cdi_%s.json",fileName));
-        backupDest.toFile().mkdirs();
+        if (!backupDest.toFile().mkdirs()) ConditionalKeepInventoryMod.LOGGER.info("Successfully created missing backup folder");
         Path backupFile = Paths.get("config/conditionalKeepInventory.json");
         try {
             Files.copy(backupFile,backupDest,COPY_ATTRIBUTES);

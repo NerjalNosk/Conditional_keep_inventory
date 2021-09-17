@@ -30,8 +30,8 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
     @Override
     public void onInitialize() {
         LOGGER.info("Twisting the death drops");
-        conditionalKeepInventoryRule = GameRuleRegistry.register("conditionalKeepInventory", GameRules.Category.DROPS, GameRuleFactory.createBooleanRule(true));
-        conditionalDoVanishing = GameRuleRegistry.register("conditionalDoVanishing", GameRules.Category.DROPS, GameRuleFactory.createBooleanRule(true));
+        conditionalKeepInventoryRule = GameRuleRegistry.register("conditionalKeepInventory", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
+        conditionalDoVanishing = GameRuleRegistry.register("conditionalDoVanishing", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
         ServerLifecycleEvents.SERVER_STARTED.register((server) -> {
             server.getOverworld().getGameRules().get(conditionalKeepInventoryRule).set(isEnabled(),server);
             server.getOverworld().getGameRules().get(conditionalDoVanishing).set(doCurse(),server);
@@ -134,6 +134,12 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
     }
     public static boolean isBlacklisted(DamageSource source) {
         return config.isBlacklisted(source);
+    }
+    public static int firstAvailableWhitelistId() {
+        return config.firstAvailableWhitelistId();
+    }
+    public static int firstAvailableBlacklistId() {
+        return config.firstAvailableBlacklistId();
     }
 
     public static void updatePlayerDamage(UUID playerUUID, DamageSource source) {

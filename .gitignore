@@ -105,6 +105,7 @@ build/
 build_history
 
 key.txt
+*.html
 
 # Ignore Gradle GUI config
 gradle-app.setting

@@ -104,4 +104,24 @@ public class ConfigData {
         }
         return false;
     }
+    public int firstAvailableWhitelistId() {
+        int i = 1;
+        int max = this.whitelist.size();
+        while (i <= max) {
+            ConfigElem tempElem = new ConfigElem(i,false,null,null,null,null);
+            if (!this.whitelist.contains(tempElem)) return i;
+            i++;
+        }
+        return i;
+    }
+    public int firstAvailableBlacklistId() {
+        int i = 1;
+        int max = this.blacklist.size();
+        while (i <= max) {
+            ConfigElem tempElem = new ConfigElem(i,false,null,null,null,null);
+            if (!this.blacklist.contains(tempElem)) return i;
+            i++;
+        }
+        return i;
+    }
 }

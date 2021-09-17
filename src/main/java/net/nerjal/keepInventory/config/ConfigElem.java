@@ -1,5 +1,6 @@
 package net.nerjal.keepInventory.config;
 
+import com.google.gson.JsonObject;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.ProjectileDamageSource;
@@ -7,6 +8,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -20,7 +22,7 @@ public class ConfigElem {
     private String weapon;
 
     public ConfigElem(int id, boolean toggle, String entity, String source, String projectile, String heldItem) {
-        if (id == 0) {
+        if (id <= 0) {
             return;
         }
         this.id = id;
@@ -29,6 +31,55 @@ public class ConfigElem {
         this.source = source;
         this.projectile = projectile;
         this.weapon = heldItem;
+    }
+
+    public static ConfigElem parseJson(JsonObject json,ListComparator l) {
+        ConditionalKeepInventoryMod.LOGGER.info("ConfigElem parsing started");
+        int id;
+        if (l.check==0) id = ConditionalKeepInventoryMod.firstAvailableBlacklistId();
+        else id = ConditionalKeepInventoryMod.firstAvailableWhitelistId();
+        ConditionalKeepInventoryMod.LOGGER.info("ConfigElem collected ID");
+        boolean toggle = true;
+        String entity = null;
+        String source = null;
+        String projectile = null;
+        String heldItem = null;
+        List<String> ignored = new ArrayList<>();
+
+        try {
+            toggle = json.get("toggle").getAsBoolean();
+        } catch (Exception e) {
+            ignored.add("toggle");
+        }
+        try {
+            entity = json.get("killer_entity").getAsString();
+        } catch (Exception e) {
+            ignored.add("killer_entity");
+        }
+        try {
+            source = json.get("source").getAsString();
+        } catch (Exception e) {
+            ignored.add("source");
+        }
+        try {
+            projectile = json.get("projectile").getAsString();
+        } catch (Exception e) {
+            ignored.add("projectile");
+        }
+        try {
+            heldItem = json.get("held_item").getAsString();
+        } catch (Exception e) {
+            ignored.add("held_item");
+        }
+
+        ConditionalKeepInventoryMod.LOGGER.info(String.format("Ignored missing elements %s to condition entry",String.join(", ",ignored)));
+
+        if (entity == null && source == null && projectile == null && heldItem == null) {
+            ConditionalKeepInventoryMod.LOGGER.info("ConfigElem parsing failed");
+            return null;
+        }
+        ConditionalKeepInventoryMod.LOGGER.info("ConfigElem parsing successful");
+        return new ConfigElem(id,toggle,entity,source,projectile,heldItem);
     }
 
     public int getId() {

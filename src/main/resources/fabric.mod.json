@@ -9,7 +9,12 @@
   ],
   "contact": {
     "email": "nosk.nerjal@gmx.com",
-    "discord": "329574958332248074"
+    "discord": "329574958332248074",
+    "sources": "https://github.com/NerjalNosk/Conditional_keep_inventory",
+    "issues": "https://github.com/NerjalNosk/Conditional_keep_inventory/issues"
+  },
+  "breaks": {
+    "fabric": "<0.30.0"
   },
   "license": "MIT",
   "icon": "assets/conditional_keepinventory/icon.png",
@@ -23,7 +28,16 @@
     "build.mixins.json"
   ],
   "depends": {
+    "fabric-resource-loader-v0": "*",
+    "fabric-screen-api-v1": ">=1.0.4",
     "fabricloader": ">=0.11.6",
-    "minecraft": "1.17.1"
+    "minecraft": ">=1.17-"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.discord": "https://discord.gg/ckMCAtVrBW"
+      }
+    }
   }
 }
