@@ -88,6 +88,10 @@ public class ConfigElem {
     public boolean getToggle() {
         return this.toggle;
     }
+    public boolean toggle() {
+        this.toggle = !this.toggle;
+        return this.toggle;
+    }
     public String getKillerEntity() {
         return this.killerEntity;
     }
@@ -125,7 +129,7 @@ public class ConfigElem {
         }
         if (this.weapon != null) {
             if (Objects.requireNonNull(damage.getAttacker()).getItemsHand() != null && this.weapon.equals("")) return false;
-            if (!damage.getAttacker().getItemsHand().iterator().next().getName().asString().equals(this.weapon)) return false;
+            return damage.getAttacker().getItemsHand().iterator().next().getName().asString().equals(this.weapon);
         }
         return true;
     }
@@ -139,5 +143,17 @@ public class ConfigElem {
     @Override
     public int hashCode() {
         return this.id;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder out = new StringBuilder("Conditions: ");
+        out.append(String.format("Id: %d ",this.id));
+        out.append(String.format("; Toggle: %b ",this.toggle));
+        if (this.killerEntity != null) out.append(String.format("; KillerEntity: %s ",this.killerEntity));
+        if (this.source != null) out.append(String.format("; Source: %s ",this.source));
+        if (this.projectile != null) out.append(String.format("; Projectile: %s ",this.projectile));
+        if (this.weapon != null) out.append(String.format("; Weapon: %s ",this.weapon));
+        return out.toString();
     }
 }

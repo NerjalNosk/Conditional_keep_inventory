@@ -19,12 +19,7 @@ public abstract class LivingEntityMixin extends Entity {
         super(type, world);
     }
 
-    @Inject(method = "drop",at = @At(value = "INVOKE"))
-    private void dropCall(DamageSource source, CallbackInfo ci) {
-        ConditionalKeepInventoryMod.LOGGER.info("called LivingEntity#drop");
-    }
-
-    @Inject(method="damage", at = @At("INVOKE"))
+    @Inject(method="damage", at = @At(value = "HEAD"))
     protected void updatePlayerDamageData(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         for (PlayerEntity player : this.world.getPlayers()) {
             if (player.getUuid().equals(this.uuid)) {

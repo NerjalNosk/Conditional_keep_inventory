@@ -2,7 +2,6 @@ package net.nerjal.keepInventory.command;
 
 import com.google.gson.JsonObject;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.LiteralMessage;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
@@ -20,46 +19,61 @@ import java.util.List;
 import java.util.Objects;
 
 import static net.minecraft.server.command.CommandManager.*;
+import static com.mojang.brigadier.arguments.BoolArgumentType.*;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.*;
 import static net.nerjal.keepInventory.command.CDIListArgumentType.*;
 import static net.nerjal.keepInventory.command.JsonArgumentType.*;
 
+import static net.nerjal.keepInventory.ConditionalKeepInventoryMod.*;
+
 public class ConfigCommand {
     public static void register(@NotNull CommandDispatcher<ServerCommandSource> dispatcher, Runnable toggleStart) {
-        CommandNode<ServerCommandSource> rootCommand = (CommandNode<ServerCommandSource>) dispatcher.register(literal("conditionalkeepinventory")
+        CommandNode<ServerCommandSource> rootCommand = dispatcher.register(literal("conditionalkeepinventory")
                 .requires((source -> source.hasPermissionLevel(2)))
                 .executes(context -> info(context.getSource()))
                 .then(literal("show")
                         .then(argument("list",list())
                                 .then(argument("id",integer(1))
-                                        .executes(ConfigCommand::showOrRem)
+                                        .executes(ConfigCommand::show)
                                 )))
-                .then(literal("remove")
+                .then(literal("add")
+                        .then(argument("list",list())
+                                .then(argument("data",
+                                        json()
+                                                .addPossibleKeys(List.of("toggle","killer_entity","source","projectile","held_item"))
+                                                .enablePossibleKeysRestriction()
+                                        ).executes(ConfigCommand::add)
+                                )))
+                .then(literal("edit")
                         .then(argument("list",list())
                                 .then(argument("id",integer())
-                                        .executes(ConfigCommand::showOrRem)
-                                )))
+                                        .then(argument("data",
+                                                json().addPossibleKeys(List.of("toggle","killer_entity","source","projectile","held_item")).enablePossibleKeysRestriction())
+                                                .executes(ConfigCommand::edit)
+                                        ))))
                 .then(literal("toggle")
                         .then(argument("list",list())
                                 .then(argument("id",integer())
                                         .executes(ConfigCommand::toggle)
-                                ))
-                        .then(literal("edit")
-                                .then(argument("list",list())
-                                        .then(argument("id",integer())
-                                                .then(argument("data",
-                                                        json().addPossibleKeys(List.of("toggle","killer_entity","source","projectile","held_item")).enablePossibleKeysRestriction())
-                                                        .executes(ConfigCommand::edit)
-                                                ))))
-                )
-                .then(literal("add")
-                        .then(argument("list",list())
-                                .then(argument("data",
-                                        json().addPossibleKeys(List.of("toggle","killer_entity","source","projectile","held_item")).enablePossibleKeysRestriction())
-                                        .executes(ConfigCommand::add)
                                 )))
+                .then(literal("remove")
+                        .then(argument("list",list())
+                                .then(argument("id",integer())
+                                        .executes(ConfigCommand::rem)
+                                )))
+                .then(literal("config")
+                        .then(literal("reload").executes(ConfigCommand::reload))
+                        .then(literal("save").executes(ConfigCommand::save))
+                        .then(literal("backup")
+                                .executes(ConfigCommand::backup)
+                                .then(literal("list").executes(ConfigCommand::listBackups)))
+                        .then(literal("restoreBackup")
+                                .then(argument("id",integer()).executes(ConfigCommand::restore)))
+                        .then(literal("doStartupBackup")
+                                .then(argument("state",bool())
+                                        .executes(context -> toggleStartupBackup(toggleStart,context)))))
         );
-        dispatcher.register(literal("cdi")
+        dispatcher.register(literal("cki")
                 .executes(context -> info(context.getSource()))
                 .redirect(rootCommand)
         );
@@ -79,7 +93,7 @@ public class ConfigCommand {
                         new ClickEvent(ClickEvent.Action.OPEN_URL,"https://github.com/NerjalNosk/Conditional_keep_inventory/wiki")
                 ).withColor(Formatting.AQUA)
         );
-        source.getPlayer().sendMessage((MutableText) new LiteralText("§2 A mod made by Nerjal Nosk. §a Don't hesitate to check out the ").append(wikiLink),false);
+        source.getPlayer().sendMessage(new LiteralText("§2 A mod made by Nerjal Nosk. §a Don't hesitate to check out the ").append(wikiLink),false);
         return 0;
     }
     private static int add(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
@@ -94,11 +108,8 @@ public class ConfigCommand {
         }
 
         boolean confirm;
-        if (l.check == 1) {
-            confirm = ConditionalKeepInventoryMod.addWhitelist(elem);
-        } else {
-            confirm = ConditionalKeepInventoryMod.addBlacklist(elem);
-        }
+        if (l.check == 1) confirm = ConditionalKeepInventoryMod.addWhitelist(elem);
+        else confirm = ConditionalKeepInventoryMod.addBlacklist(elem);
 
         if (!confirm) {
             context.getSource().sendFeedback(new LiteralText(
@@ -130,12 +141,161 @@ public class ConfigCommand {
         return 0;
     }
     private static int edit(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+
+        ListComparator l = Objects.requireNonNull(ListComparator.test(CDIListArgumentType.getList(context,"list")));
+        int id = getInteger(context,"id");
+        JsonObject json = getJson(context,"data");
+        ConfigElem tElem = ConfigElem.parseJson(json, l);
+
+        if (tElem == null) {
+            context.getSource().sendFeedback(new LiteralText("Error in parsing condition"),false);
+            return 2;
+        }
+
+        ConfigElem elem = new ConfigElem(id,tElem.getToggle(),tElem.getKillerEntity(),tElem.getSource(),tElem.getProjectile(),tElem.getWeapon());
+
+        boolean confirm;
+        if (l.check == 1) confirm = ConditionalKeepInventoryMod.editWhitelist(elem);
+        else confirm = ConditionalKeepInventoryMod.editBlacklist(elem);
+
+        if (!confirm) {
+            context.getSource().sendError(new LiteralText(
+                    String.format("Failed to edit the condition to with id %d the %s",id,l.check == 1 ? "whitelist":"blacklist")
+            ));
+            return 1;
+        }
+
+        Entity sourceE = context.getSource().getEntity();
+        MutableText text;
+
+        if (sourceE == null) {
+            text = new LiteralText(String.format("%s edited the condition with id %d of the %s",
+                    context.getSource().getDisplayName(),
+                    elem.getId(),
+                    l.check == 1 ? "whitelist" : "blacklist"
+            ));
+        } else {
+            LiteralText userHover = (LiteralText) new LiteralText(sourceE.getDisplayName().asString()).setStyle(Style.EMPTY.withHoverEvent(
+                    new HoverEvent(HoverEvent.Action.SHOW_ENTITY,new HoverEvent.EntityContent(sourceE.getType(), sourceE.getUuid(),sourceE.getDisplayName()))
+            ));
+            text = userHover.append(new LiteralText(String.format(" added the condition with id %d of the %s",
+                    elem.getId(),
+                    l.check == 1 ? "whitelist" : "blacklist"
+            )));
+        }
+
+        context.getSource().sendFeedback(text,true);
+
         return 0;
     }
-    private static int showOrRem(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    private static int show(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+
+        ListComparator l = Objects.requireNonNull(ListComparator.test(CDIListArgumentType.getList(context,"list")));
+        int id = getInteger(context,"id");
+
+        String display = l.check == 1 ? ConditionalKeepInventoryMod.showWhitelistElem(id) : ConditionalKeepInventoryMod.showBlacklistElem(id);
+
+        if (display == null) {
+            context.getSource().sendError(new LiteralText(String.format(
+                    "Error in fetching the data of %s's element with id %d",
+                    l.check == 1 ? "whitelist" : "blacklist",
+                    id
+            )));
+            return 1;
+        }
+
+        context.getSource().sendFeedback(new LiteralText(String.format(
+                "Data of %s's element with id %d:  %s",
+                l.check == 1 ? "whitelist" : "blacklist",
+                id,
+                display
+        )),false);
+
+        return 0;
+    }
+    private static int rem(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+
+        ListComparator l = Objects.requireNonNull(ListComparator.test(CDIListArgumentType.getList(context,"list")));
+        int id = getInteger(context,"id");
+
+        boolean confirm = l.check == 1 ? ConditionalKeepInventoryMod.remWhitelist(id) : ConditionalKeepInventoryMod.remBlacklist(id);
+
+        if (!confirm) {
+            context.getSource().sendError(new LiteralText(String.format(
+                    "Unable to find condition with id %d in %s",
+                    id,
+                    l.check == 1 ? "whitelist" : "blacklist"
+            )));
+            return 1;
+        }
+
+        context.getSource().sendFeedback(new LiteralText(String.format(
+                "%s removed condition with id %d from the %s",
+                context.getSource().getName(),
+                id,
+                l.check == 1 ? "whitelist" : "blacklist"
+        )),true);
         return 0;
     }
     private static int toggle(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+
+        ListComparator l = Objects.requireNonNull(ListComparator.test(CDIListArgumentType.getList(context,"list")));
+        int id = getInteger(context,"id");
+
+        BoolObj confirm = l.check == 1 ? toggleWhitelist(id) : toggleBlacklist(id);
+
+        if (confirm == null) {
+            context.getSource().sendError(new LiteralText(String.format(
+                    "Unable to find or toggle condition with id %d in %s",
+                    id,
+                    l.check == 1 ? "whitelist" : "blacklist"
+            )));
+            return 1;
+        }
+        context.getSource().sendFeedback(new LiteralText(String.format(
+                "Condition with id %d from %s switch to %b",
+                id,
+                l.check == 1 ? "whitelist" : "blacklist",
+                confirm.value
+        )),true);
+        return 0;
+    }
+    private static int reload(CommandContext<ServerCommandSource> context) {
+        ConditionalKeepInventoryMod.reloadConfig();
+        return 0;
+    }
+    private static int save(CommandContext<ServerCommandSource> context) {
+        ConditionalKeepInventoryMod.updateConfig();
+        return 0;
+    }
+    private static int backup(CommandContext<ServerCommandSource> context) {
+        ConditionalKeepInventoryMod.backupConfig();
+        return 0;
+    }
+    private static int listBackups(CommandContext<ServerCommandSource> context) {
+        String[] filesNames = ConditionalKeepInventoryMod.listBackupFiles();
+        StringBuilder out = new StringBuilder("Here's the list of available backup IDs: ");
+        for (int i = 0; i < filesNames.length; i++) {
+            String file = filesNames[i];
+            out.append(String.format(" %s%s",file.split("#")[0],i+1 == filesNames.length ? "":","));
+        }
+        context.getSource().sendFeedback(new LiteralText(out.toString()),false);
+        return 0;
+    }
+    private static int restore(CommandContext<ServerCommandSource> context) {
+        int id = getInteger(context,"id");
+        if (ConditionalKeepInventoryMod.restoreBackup(id)) return 0;
+        return 1;
+    }
+    private static int toggleStartupBackup(Runnable runnable, CommandContext<ServerCommandSource> context) {
+        Object[] args = {new ConditionalKeepInventoryMod.BoolObj(getBool(context,"state"))};
+        try {
+            runnable.run(args);
+            context.getSource().sendFeedback(new LiteralText(String.format("Startup backup config set to %s",((ConditionalKeepInventoryMod.BoolObj)args[0]).value)),true);
+        } catch (Exception e) {
+            context.getSource().sendError(new LiteralText("Error trying to change the config data"));
+            return  1;
+        }
         return 0;
     }
 }

@@ -1,6 +1,7 @@
 package net.nerjal.keepInventory.config;
 
 import com.google.gson.*;
+import net.minecraft.text.LiteralText;
 import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
 import org.apache.logging.log4j.LogManager;
 
@@ -9,7 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
-import java.text.SimpleDateFormat;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 import java.util.*;
 
 public class ConfigFileManager {
@@ -138,16 +140,18 @@ public class ConfigFileManager {
                 ConfigElem e = new ConfigElem(id,toggle,entity,source,projectile,weapon);
                 disabled.add(e);
             }
+            ConditionalKeepInventoryMod.broadcastOp("Config successfully (re)loaded from file");
         } catch (IOException e) {
-            ConditionalKeepInventoryMod.LOGGER.warn("ConditionalKeepInventory config file not found. Creating a new one");
+            ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file not found. Creating a new one");
             writeConfig(true,true,false,new HashSet<>(),new HashSet<>());
         } catch (ClassCastException e) {
-            if (backupConfig()) ConditionalKeepInventoryMod.LOGGER.warn("ConditionalKeepInventory config file empty or incorrect, created a backup and rewriting raw one");
-            else ConditionalKeepInventoryMod.LOGGER.warn("ConditionalKeepInventory config file empty or incorrect, failed creating a backup, rewriting raw one");
+            if (backupConfig()) ConditionalKeepInventoryMod.broadcastOp(
+                    new LiteralText("ConditionalKeepInventory config file empty or incorrect, created a backup and rewriting raw one"));
+            else ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file empty or incorrect, failed creating a backup, rewriting raw one");
             writeConfig(true,true,false,new HashSet<>(),new HashSet<>());
         } catch (JsonParseException e) {
-            ConditionalKeepInventoryMod.LOGGER.warn("Error while parsing the config file. Loading with raw config");
-            ConditionalKeepInventoryMod.LOGGER.warn("Warning: edit the config via command will overwrite the wrong config! Try doing a backup before changing anything");
+            ConditionalKeepInventoryMod.broadcastOp("Error while parsing the config file. Loading with raw config");
+            ConditionalKeepInventoryMod.broadcastOp("Warning: edit the config via command will overwrite the wrong config! Do a backup before Saving anything");
         }
         LogManager.getLogger().info(String.format("Skipped over %d rules for conditional KeepInventory",nullOrAbsentRules));
     }
@@ -193,26 +197,94 @@ public class ConfigFileManager {
         config.add("blacklist",bl);
         try {
             FileWriter file = new FileWriter("config/conditionalKeepInventory.json");
-            String configStr = new Gson().toJson(config);
+            String configStr = parseJson(config);
             file.write(configStr);
             file.close();
+            ConditionalKeepInventoryMod.broadcastOp("Successfully wrote the config file from given data");
         } catch (IOException e) {
-            e.printStackTrace();
+            ConditionalKeepInventoryMod.broadcastOp("Error while trying to write the config file. Please check manually for any problem");
+            ConditionalKeepInventoryMod.LOGGER.error(e);
         }
     }
 
     public static boolean backupConfig() {
-        String fileName = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(Calendar.getInstance().getTime());
-        Path backupDest = Paths.get(String.format("config/backups/conditionalKeepInventory/cdi_%s.json",fileName));
-        if (!backupDest.toFile().mkdirs()) ConditionalKeepInventoryMod.LOGGER.info("Successfully created missing backup folder");
-        Path backupFile = Paths.get("config/conditionalKeepInventory.json");
         try {
-            Files.copy(backupFile,backupDest,COPY_ATTRIBUTES);
-            ConditionalKeepInventoryMod.LOGGER.info(String.format("Backup config file created under %s",backupDest));
+            Path backupFolder = Paths.get("config/backups/conditionalKeepInventory/");
+            if (!backupFolder.toFile().mkdirs()) ConditionalKeepInventoryMod.broadcastOp("Successfully created missing backup folder");
+            String fileName = getNewBackupName();
+            Path backupDest = Paths.get(String.format("config/backups/conditionalKeepInventory/%s",fileName));
+            Path backupFile = Paths.get("config/conditionalKeepInventory.json");
+            Files.copy(backupFile,backupDest,REPLACE_EXISTING,COPY_ATTRIBUTES);
+            ConditionalKeepInventoryMod.broadcastOp(String.format("Backup config file created under %s",backupDest));
             return true;
         } catch (IOException e) {
             ConditionalKeepInventoryMod.LOGGER.error(e);
             return false;
         }
+    }
+
+    private static String getNewBackupName() {
+        List<String> backupFiles = Arrays.asList(Objects.requireNonNull(new File("config/backups/conditionalKeepInventory/").list()));
+        int i = 0;
+        while (backupFiles.contains(String.format("%d#conditionalKeepInventory.json",i))) {
+            i++;
+        }
+        return String.format("%d#conditionalKeepInventory.json",i);
+    }
+
+    public static boolean restoreBackup(int id) {
+        List<String> backupFiles = Arrays.asList(Objects.requireNonNull(new File("config/backups/conditionalKeepInventory/").list()));
+        if (!(backupFiles.contains(String.format("%d#conditionalKeepInventory.json",id)))) return false;
+        try {
+            Path backupFile = Paths.get(String.format("config/backups/conditionalKeepInventory/%d#conditionalKeepInventory.json",id));
+            Path configFile = Paths.get("config/conditionalKeepInventory.json");
+            Files.copy(backupFile,configFile,COPY_ATTRIBUTES,REPLACE_EXISTING);
+            ConditionalKeepInventoryMod.LOGGER.info(String.format("Config backup with id %d successfully restored",id));
+            return true;
+        } catch (IOException e) {
+            ConditionalKeepInventoryMod.LOGGER.error(e);
+            return false;
+        }
+    }
+
+    public static String[] listBackupFiles() {
+        return Objects.requireNonNull(new File("config/backups/conditionalKeepInventory/").list());
+    }
+
+
+    public static String parseJson(JsonElement json) {
+        return parseJson(json,0);
+    }
+
+    public static String parseJson(JsonElement json, int space) {
+        StringBuilder out = new StringBuilder();
+        int spacing = space + 1;
+        if (json.isJsonPrimitive()) {
+            JsonPrimitive primJson = json.getAsJsonPrimitive();
+            if (primJson.isString()) return String.format("\"%s\"", primJson.getAsString());
+            return primJson.getAsString();
+        }
+        if (json.isJsonArray()) {
+            JsonArray array = json.getAsJsonArray();
+            out.append("[\n");
+            for (int i = 0;i<array.size();i++) {
+                out.append("  ".repeat(spacing)).append(parseJson(array.get(i), spacing));
+                if (i+1 < array.size()) out.append(",");
+                out.append("\n");
+            }
+            out.append("  ".repeat(space)).append("]");
+            return out.toString();
+        } else if (json.isJsonObject()) {
+            JsonObject object = json.getAsJsonObject();
+            out.append("{\n");
+            for (Map.Entry<String,JsonElement> entry : object.entrySet()) {
+                JsonElement elem = entry.getValue();
+                out.append("  ".repeat(spacing)).append(String.format("\"%s\"",entry.getKey())).append(" : ").append(parseJson(elem,spacing)).append(",\n");
+            }
+            out.deleteCharAt(out.lastIndexOf(","));
+            out.append("  ".repeat(space)).append("}");
+            return out.toString();
+        }
+        return "";
     }
 }
