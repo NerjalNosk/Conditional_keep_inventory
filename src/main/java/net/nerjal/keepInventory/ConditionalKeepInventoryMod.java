@@ -128,12 +128,6 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
     public static boolean isBlacklisted(DamageSource source,String worldKey) {
         return config.isBlacklisted(source,worldKey);
     }
-    public static boolean isWhitelisted(int id) {
-        return config.isWhitelisted(id);
-    }
-    public static boolean isBlacklisted(int id) {
-        return config.isBlacklisted(id);
-    }
     public static boolean editWhitelist(ConfigElem elem) {
         return config.editWhitelist(elem);
     }
