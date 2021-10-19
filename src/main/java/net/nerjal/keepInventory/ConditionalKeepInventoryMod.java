@@ -27,9 +27,8 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
     public static GameRules.Key<GameRules.BooleanRule> conditionalKeepInventoryRule;
     public static GameRules.Key<GameRules.BooleanRule> conditionalDoVanishing;
     public static final Logger LOGGER = LogManager.getLogger();
-    private static final ConfigData config = new ConfigData();
+    private static final ConfigData config = new ConfigData(null);
     private static final Map<UUID,Validation> liveDamageData = new HashMap<>();
-    private static ServerCommandSource commandSource;
     private static boolean started = false;
 
     @Override
@@ -37,18 +36,27 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
         LOGGER.info("Twisting the death drops");
         conditionalKeepInventoryRule = GameRuleRegistry.register("conditionalKeepInventory", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
         conditionalDoVanishing = GameRuleRegistry.register("conditionalDoVanishing", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
+        Runnable toggleStartBackup = (Object[] args) -> {
+            if (args.length==0) throw new Exception("Invalid toggle state");
+            if (!(Arrays.stream(args).iterator().next() instanceof BoolObj state)) throw new Exception("Invalid toggle state");
+            if (state.value) config.enableStartBackup();
+            else config.disableStartBackup();
+        };
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
+            LOGGER.info("Deepening the death drop twists");
+            ConfigCommand.register(dispatcher,toggleStartBackup);
+        });
         ServerLifecycleEvents.SERVER_STARTED.register((server) -> {
             server.getOverworld().getGameRules().get(conditionalKeepInventoryRule).set(isEnabled(),server);
             server.getOverworld().getGameRules().get(conditionalDoVanishing).set(doCurse(),server);
             LOGGER.info("Aligning gamerule and config");
             if (config.doStartBackup()) {
-                if (config.backupConfig()) LOGGER.info("Made a backup of the ConditionalKeepInventory config file");
+                if (config.backupConfig(null)) LOGGER.info("Made a backup of the ConditionalKeepInventory config file");
                 else LOGGER.info("Couldn't achieve making a backup of the ConditionalKeepInventory config file");
             }
-            commandSource = server.getCommandSource();
             started = true;
         });
-        ServerLifecycleEvents.SERVER_STOPPING.register((server -> {
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             started = false;
             boolean toggleRuleValue = server.getOverworld().getGameRules().getBoolean(conditionalKeepInventoryRule);
             boolean vanishRuleValue = server.getOverworld().getGameRules().getBoolean(conditionalDoVanishing);
@@ -60,18 +68,8 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
                 if (vanishRuleValue) enableCurse();
                 else disableCurse();
             }
-            updateConfig();
-        }));
-        Runnable toggleStartBackup = (Object[] args) -> {
-            if (args.length==0) throw new Exception("Invalid toggle state");
-            if (!(Arrays.stream(args).iterator().next() instanceof BoolObj state)) throw new Exception("Invalid toggle state");
-            if (state.value) config.enableStartBackup();
-            else config.disableStartBackup();
-        };
-        CommandRegistrationCallback.EVENT.register(((dispatcher, dedicated) -> {
-            LOGGER.info("Deepening the death drop twists");
-            ConfigCommand.register(dispatcher,toggleStartBackup);
-        }));
+            updateConfig(null);
+        });
     }
     public static class BoolObj {
         public boolean value;
@@ -112,23 +110,23 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
     public static boolean remBlacklist(int id) {
         return config.remBlacklist(id);
     }
-    public static void updateConfig() {
-        config.updateConfig();
+    public static void updateConfig(ServerCommandSource source) {
+        config.updateConfig(source);
     }
-    public static void reloadConfig() {
-        config.reloadConfig();
+    public static void reloadConfig(ServerCommandSource source) {
+        config.reloadConfig(source);
     }
-    public static void backupConfig() {
-        config.backupConfig();
+    public static void backupConfig(ServerCommandSource source) {
+        config.backupConfig(source);
     }
-    public static boolean restoreBackup(int id) {
-        return config.restoreBackup(id);
+    public static boolean restoreBackup(int id,ServerCommandSource source) {
+        return config.restoreBackup(id,source);
     }
-    public static boolean isWhitelisted(DamageSource source) {
-        return config.isWhitelisted(source);
+    public static boolean isWhitelisted(DamageSource source,String worldKey) {
+        return config.isWhitelisted(source,worldKey);
     }
-    public static boolean isBlacklisted(DamageSource source) {
-        return config.isBlacklisted(source);
+    public static boolean isBlacklisted(DamageSource source,String worldKey) {
+        return config.isBlacklisted(source,worldKey);
     }
     public static boolean isWhitelisted(int id) {
         return config.isWhitelisted(id);
@@ -154,6 +152,12 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
     public static String showBlacklistElem(int id) {
         return config.showBlacklistElem(id);
     }
+    public static String showListWhitelist() {
+        return config.showListWhitelist();
+    }
+    public static String showListBlacklist() {
+        return config.showListBlacklist();
+    }
     public static BoolObj toggleWhitelist(int id) {
         return config.toggleWhitelist(id);
     }
@@ -164,9 +168,9 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
         return config.listBackupFiles();
     }
 
-    public static void updatePlayerDamage(UUID playerUUID, DamageSource source) {
-        if (isWhitelisted(source)) liveDamageData.put(playerUUID,Validation.WHITELIST);
-        else if (isBlacklisted(source)) liveDamageData.put(playerUUID,Validation.BLACKLIST);
+    public static void updatePlayerDamage(UUID playerUUID, DamageSource source,String worldKey) {
+        if (isWhitelisted(source,worldKey)) liveDamageData.put(playerUUID,Validation.WHITELIST);
+        else if (isBlacklisted(source,worldKey)) liveDamageData.put(playerUUID,Validation.BLACKLIST);
         else liveDamageData.put(playerUUID,Validation.NONE);
     }
     public static Validation getPlayerValidation(UUID playerUUID) {
@@ -174,12 +178,12 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
         return liveDamageData.get(playerUUID);
     }
 
-    public static void broadcastOp(Text message) {
-        if (started) commandSource.sendFeedback(message,true);
+    public static void broadcastOp(Text message,ServerCommandSource source) {
+        if (started && source != null) source.sendFeedback(message,true);
         else LOGGER.info(message);
     }
-    public static void broadcastOp(String message) {
-        broadcastOp(new LiteralText(message));
+    public static void broadcastOp(String message,ServerCommandSource source) {
+        broadcastOp(new LiteralText(message),source);
     }
 
     public static Identifier id(String s) {

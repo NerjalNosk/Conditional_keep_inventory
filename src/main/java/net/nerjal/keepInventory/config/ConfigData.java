@@ -1,8 +1,10 @@
 package net.nerjal.keepInventory.config;
 
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.server.command.ServerCommandSource;
 
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static net.nerjal.keepInventory.ConditionalKeepInventoryMod.*;
 
@@ -12,8 +14,8 @@ public class ConfigData {
     private boolean toggle;
     private boolean curse;
     private boolean backupOnStartup;
-    public ConfigData() {
-        ConfigFileManager.readConfig();
+    public ConfigData(ServerCommandSource source) {
+        ConfigFileManager.readConfig(source);
         this.toggle = ConfigFileManager.isEnabled();
         this.curse = ConfigFileManager.doCurse();
         this.whitelist = ConfigFileManager.whitelist();
@@ -71,40 +73,40 @@ public class ConfigData {
         }
         return false;
     }
-    public void updateConfig() {
-        ConfigFileManager.writeConfig(this.toggle,this.curse,this.backupOnStartup,this.whitelist,this.blacklist);
+    public void updateConfig(ServerCommandSource source) {
+        ConfigFileManager.writeConfig(this.toggle,this.curse,this.backupOnStartup,this.whitelist,this.blacklist,source);
     }
-    public void reloadConfig() {
-        ConfigFileManager.readConfig();
+    public void reloadConfig(ServerCommandSource source) {
+        ConfigFileManager.readConfig(source);
         this.toggle = ConfigFileManager.isEnabled();
         this.curse = ConfigFileManager.doCurse();
         this.whitelist = ConfigFileManager.whitelist();
         this.blacklist = ConfigFileManager.blacklist();
     }
-    public boolean backupConfig() {
-        return ConfigFileManager.backupConfig();
+    public boolean backupConfig(ServerCommandSource source) {
+        return ConfigFileManager.backupConfig(source);
     }
-    public boolean restoreBackup(int id) {
-        return ConfigFileManager.restoreBackup(id);
+    public boolean restoreBackup(int id,ServerCommandSource source) {
+        return ConfigFileManager.restoreBackup(id,source);
     }
-    public boolean isWhitelisted(DamageSource source) {
+    public boolean isWhitelisted(DamageSource source,String worldKey) {
         for (ConfigElem elem : this.whitelist) {
-            if (elem.meetsCondition(source)) return true;
+            if (elem.meetsCondition(source,worldKey)) return true;
         }
         return false;
     }
-    public boolean isBlacklisted(DamageSource source) {
+    public boolean isBlacklisted(DamageSource source, String worldKey) {
         for (ConfigElem elem : this.blacklist) {
-            if (elem.meetsCondition(source)) return true;
+            if (elem.meetsCondition(source,worldKey)) return true;
         }
         return false;
     }
     public boolean isWhitelisted(int id) {
-        ConfigElem elem = new ConfigElem(id,true,null,null,null,null);
+        ConfigElem elem = new ConfigElem(id,true,null,null,null,null,null);
         return whitelist.contains(elem);
     }
     public boolean isBlacklisted(int id) {
-        ConfigElem elem = new ConfigElem(id,true,null,null,null,null);
+        ConfigElem elem = new ConfigElem(id,true,null,null,null,null,null);
         return blacklist.contains(elem);
     }
     public boolean editWhitelist(ConfigElem elem) {
@@ -117,7 +119,7 @@ public class ConfigData {
         int i = 1;
         int max = this.whitelist.size();
         while (i <= max) {
-            ConfigElem tempElem = new ConfigElem(i,false,null,null,null,null);
+            ConfigElem tempElem = new ConfigElem(i,false,null,null,null,null,null);
             if (!this.whitelist.contains(tempElem)) return i;
             i++;
         }
@@ -127,7 +129,7 @@ public class ConfigData {
         int i = 1;
         int max = this.blacklist.size();
         while (i <= max) {
-            ConfigElem tempElem = new ConfigElem(i,false,null,null,null,null);
+            ConfigElem tempElem = new ConfigElem(i,false,null,null,null,null,null);
             if (!this.blacklist.contains(tempElem)) return i;
             i++;
         }
@@ -144,6 +146,34 @@ public class ConfigData {
             if (elem.getId() == id) return elem.toString();
         }
         return null;
+    }
+    public String showListWhitelist() {
+        int count = this.whitelist.size();
+        StringBuilder out = new StringBuilder(String.format("There are %d elements in the whitelist",count));
+        if (count > 0) {
+            out.append(": ");
+            AtomicInteger i = new AtomicInteger();
+            this.whitelist.forEach(elem -> {
+                if (i.get() > 0) out.append(", ");
+                i.getAndIncrement();
+                out.append(elem.getId());
+            });
+        } else out.append(".");
+        return out.toString();
+    }
+    public String showListBlacklist() {
+        int count = this.blacklist.size();
+        StringBuilder out = new StringBuilder(String.format("There are %d elements in the whitelist",count));
+        if (count > 0) {
+            out.append(": ");
+            AtomicInteger i = new AtomicInteger();
+            this.blacklist.forEach(elem -> {
+                if (i.get() > 0) out.append(", ");
+                i.getAndIncrement();
+                out.append(elem.getId());
+            });
+        } else out.append(".");
+        return out.toString();
     }
     public BoolObj toggleWhitelist(int id) {
         for (ConfigElem elem : this.whitelist) {

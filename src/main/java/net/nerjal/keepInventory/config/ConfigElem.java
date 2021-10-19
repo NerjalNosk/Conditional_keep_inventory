@@ -20,8 +20,9 @@ public class ConfigElem {
     private String source;
     private String projectile;
     private String weapon;
+    private String dimenstion;
 
-    public ConfigElem(int id, boolean toggle, String entity, String source, String projectile, String heldItem) {
+    public ConfigElem(int id, boolean toggle, String entity, String source, String projectile, String heldItem, String dimension) {
         if (id <= 0) {
             return;
         }
@@ -31,6 +32,7 @@ public class ConfigElem {
         this.source = source;
         this.projectile = projectile;
         this.weapon = heldItem;
+        this.dimenstion = dimension;
     }
 
     public static ConfigElem parseJson(JsonObject json,ListComparator l) {
@@ -44,6 +46,7 @@ public class ConfigElem {
         String source = null;
         String projectile = null;
         String heldItem = null;
+        String dimension = null;
         List<String> ignored = new ArrayList<>();
 
         try {
@@ -71,15 +74,20 @@ public class ConfigElem {
         } catch (Exception e) {
             ignored.add("held_item");
         }
+        try {
+            dimension = json.get("dimension").getAsString();
+        } catch (Exception e) {
+            ignored.add("dimension");
+        }
 
         ConditionalKeepInventoryMod.LOGGER.info(String.format("Ignored missing elements %s to condition entry",String.join(", ",ignored)));
 
-        if (entity == null && source == null && projectile == null && heldItem == null) {
+        if (entity == null && source == null && projectile == null && heldItem == null && dimension == null) {
             ConditionalKeepInventoryMod.LOGGER.info("ConfigElem parsing failed");
             return null;
         }
         ConditionalKeepInventoryMod.LOGGER.info("ConfigElem parsing successful");
-        return new ConfigElem(id,toggle,entity,source,projectile,heldItem);
+        return new ConfigElem(id,toggle,entity,source,projectile,heldItem,dimension);
     }
 
     public int getId() {
@@ -104,9 +112,13 @@ public class ConfigElem {
     public String getWeapon() {
         return this.weapon;
     }
+    public String getDimenstion() {
+        return this.dimenstion;
+    }
 
-    public boolean meetsCondition(DamageSource damage) {
+    public boolean meetsCondition(DamageSource damage,String worldKey) {
         if (!this.toggle) return false;
+        // --- do only uncomment the following line for debug purposes ---
         //ConditionalKeepInventoryMod.LOGGER.info(String.format("id: %d, source: %s, killerEntity: %s, targetName: %s",this.id,this.source,this.killerEntity,damage.getName()));
         if (this.source != null && !this.source.equals(damage.getName().toLowerCase())) return false;
         if (this.projectile != null) {
@@ -125,11 +137,21 @@ public class ConfigElem {
             } else {
                 targetEntity = Registry.ENTITY_TYPE.get(new Identifier(this.killerEntity));
             }
-            if (this.killerEntity == "" || !Objects.requireNonNull(damage.getAttacker()).getType().equals(targetEntity)) return false;
+            if (this.killerEntity.equals("") || !Objects.requireNonNull(damage.getAttacker()).getType().equals(targetEntity)) return false;
         }
         if (this.weapon != null) {
             if (Objects.requireNonNull(damage.getAttacker()).getItemsHand() != null && this.weapon.equals("")) return false;
-            return damage.getAttacker().getItemsHand().iterator().next().getName().asString().equals(this.weapon);
+            if (!damage.getAttacker().getItemsHand().iterator().next().getName().asString().equals(this.weapon)) return false;
+        }
+        if (this.dimenstion != null) {
+            String dim;
+            if (this.dimenstion.indexOf(':') < 0) dim = "minecraft:"+this.dimenstion;
+            else {
+                String[] spacePath = this.dimenstion.split(":");
+                dim = spacePath[0]+":"+spacePath[1];
+            }
+            ConditionalKeepInventoryMod.LOGGER.info(String.format("WorldKey: %s , configDim: %s",worldKey,dim));
+            return worldKey.equals(dim);
         }
         return true;
     }
@@ -154,6 +176,7 @@ public class ConfigElem {
         if (this.source != null) out.append(String.format("; Source: %s ",this.source));
         if (this.projectile != null) out.append(String.format("; Projectile: %s ",this.projectile));
         if (this.weapon != null) out.append(String.format("; Weapon: %s ",this.weapon));
+        if (this.dimenstion != null) out.append(String.format("; Dimension: %S",this.dimenstion));
         return out.toString();
     }
 }

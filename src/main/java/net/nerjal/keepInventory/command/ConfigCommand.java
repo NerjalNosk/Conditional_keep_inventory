@@ -33,6 +33,7 @@ public class ConfigCommand {
                 .executes(context -> info(context.getSource()))
                 .then(literal("show")
                         .then(argument("list",list())
+                                .executes(ConfigCommand::showList)
                                 .then(argument("id",integer(1))
                                         .executes(ConfigCommand::show)
                                 )))
@@ -40,7 +41,7 @@ public class ConfigCommand {
                         .then(argument("list",list())
                                 .then(argument("data",
                                         json()
-                                                .addPossibleKeys(List.of("toggle","killer_entity","source","projectile","held_item"))
+                                                .addPossibleKeys(List.of("toggle","killer_entity","source","projectile","held_item","dimension"))
                                                 .enablePossibleKeysRestriction()
                                         ).executes(ConfigCommand::add)
                                 )))
@@ -48,7 +49,9 @@ public class ConfigCommand {
                         .then(argument("list",list())
                                 .then(argument("id",integer())
                                         .then(argument("data",
-                                                json().addPossibleKeys(List.of("toggle","killer_entity","source","projectile","held_item")).enablePossibleKeysRestriction())
+                                                json()
+                                                        .addPossibleKeys(List.of("toggle","killer_entity","source","projectile","held_item","dimension"))
+                                                        .enablePossibleKeysRestriction())
                                                 .executes(ConfigCommand::edit)
                                         ))))
                 .then(literal("toggle")
@@ -86,7 +89,7 @@ public class ConfigCommand {
         source.getPlayer().sendMessage(new LiteralText("§f In order to use this mod, you have multiple tools:"),false);
         source.getPlayer().sendMessage(new LiteralText("§4 - A config file §f located in the config folder as conditionalKeepInventory.json"),false);
         source.getPlayer().sendMessage(
-                new LiteralText("§4 - A command §f The /conditionalkeepinventory command, or /cdi, allowing you to view and edit the config file live!"), false
+                new LiteralText("§4 - A command §f The /conditionalkeepinventory command, or /cki, allowing you to view and edit the config file live!"), false
         );
 
         LiteralText wikiLink = (LiteralText) new LiteralText("wiki").setStyle(Style.EMPTY.withClickEvent(
@@ -152,7 +155,7 @@ public class ConfigCommand {
             return 2;
         }
 
-        ConfigElem elem = new ConfigElem(id,tElem.getToggle(),tElem.getKillerEntity(),tElem.getSource(),tElem.getProjectile(),tElem.getWeapon());
+        ConfigElem elem = new ConfigElem(id,tElem.getToggle(),tElem.getKillerEntity(),tElem.getSource(),tElem.getProjectile(),tElem.getWeapon(),tElem.getDimenstion());
 
         boolean confirm;
         if (l.check == 1) confirm = ConditionalKeepInventoryMod.editWhitelist(elem);
@@ -185,6 +188,14 @@ public class ConfigCommand {
         }
 
         context.getSource().sendFeedback(text,true);
+
+        return 0;
+    }
+    private static int showList(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+
+        ListComparator l = Objects.requireNonNull(ListComparator.test(CDIListArgumentType.getList(context,"list")));
+
+        context.getSource().sendFeedback(new LiteralText(l.check == 1 ? ConditionalKeepInventoryMod.showListWhitelist() : ConditionalKeepInventoryMod.showListBlacklist()),false);
 
         return 0;
     }
@@ -261,15 +272,15 @@ public class ConfigCommand {
         return 0;
     }
     private static int reload(CommandContext<ServerCommandSource> context) {
-        ConditionalKeepInventoryMod.reloadConfig();
+        ConditionalKeepInventoryMod.reloadConfig(context.getSource());
         return 0;
     }
     private static int save(CommandContext<ServerCommandSource> context) {
-        ConditionalKeepInventoryMod.updateConfig();
+        ConditionalKeepInventoryMod.updateConfig(context.getSource());
         return 0;
     }
     private static int backup(CommandContext<ServerCommandSource> context) {
-        ConditionalKeepInventoryMod.backupConfig();
+        ConditionalKeepInventoryMod.backupConfig(context.getSource());
         return 0;
     }
     private static int listBackups(CommandContext<ServerCommandSource> context) {
@@ -284,7 +295,7 @@ public class ConfigCommand {
     }
     private static int restore(CommandContext<ServerCommandSource> context) {
         int id = getInteger(context,"id");
-        if (ConditionalKeepInventoryMod.restoreBackup(id)) return 0;
+        if (ConditionalKeepInventoryMod.restoreBackup(id,context.getSource())) return 0;
         return 1;
     }
     private static int toggleStartupBackup(Runnable runnable, CommandContext<ServerCommandSource> context) {

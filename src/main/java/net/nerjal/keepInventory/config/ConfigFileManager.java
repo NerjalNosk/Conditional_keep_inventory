@@ -1,7 +1,7 @@
 package net.nerjal.keepInventory.config;
 
 import com.google.gson.*;
-import net.minecraft.text.LiteralText;
+import net.minecraft.server.command.ServerCommandSource;
 import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
 import org.apache.logging.log4j.LogManager;
 
@@ -41,18 +41,21 @@ public class ConfigFileManager {
     }
 
 
-    public static void readConfig() {
+    public static void readConfig(ServerCommandSource commandSource) {
         try {
             FileReader file = new FileReader("config/conditionalKeepInventory.json");
             JsonObject config = (JsonObject) parser.parse(file);
             file.close();
+
             toggle = config.get("enabled").getAsBoolean();
             curse = config.get("doVanishingCurse").getAsBoolean();
             backupOnStartup = config.get("doBackupOnStartup").getAsBoolean();
             enabled = new HashSet<>();
             disabled = new HashSet<>();
+
             JsonArray whitelist = config.get("whitelist").getAsJsonArray();
             JsonArray blacklist = config.get("blacklist").getAsJsonArray();
+
             for (JsonElement elem : whitelist) {
                 JsonObject elemObj = elem.getAsJsonObject();
                 int id;
@@ -61,6 +64,7 @@ public class ConfigFileManager {
                 String source = null;
                 String projectile = null;
                 String weapon = null;
+                String dimension = null;
                 try {
                     id = elemObj.get("id").getAsInt();
                     if (id == 0) continue;
@@ -93,10 +97,16 @@ public class ConfigFileManager {
                 } catch (JsonParseException|NullPointerException e) {
                     nullOrAbsentRules ++;
                 }
+                try {
+                    dimension = elemObj.get("dimension").getAsString();
+                } catch (JsonParseException|NullPointerException e) {
+                    nullOrAbsentRules ++;
+                }
                 if (entity == null && source == null && projectile == null && weapon == null) continue;
-                ConfigElem e = new ConfigElem(id,toggle,entity,source,projectile,weapon);
+                ConfigElem e = new ConfigElem(id,toggle,entity,source,projectile,weapon,dimension);
                 enabled.add(e);
             }
+
             for (JsonElement elem : blacklist) {
                 JsonObject elemObj = elem.getAsJsonObject();
                 int id;
@@ -105,6 +115,7 @@ public class ConfigFileManager {
                 String source = null;
                 String projectile = null;
                 String weapon = null;
+                String dimension = null;
                 try {
                     id = elemObj.get("id").getAsInt();
                     if (id == 0) continue;
@@ -137,26 +148,37 @@ public class ConfigFileManager {
                 } catch (JsonParseException|NullPointerException e) {
                     nullOrAbsentRules ++;
                 }
-                ConfigElem e = new ConfigElem(id,toggle,entity,source,projectile,weapon);
+                try {
+                    dimension = elemObj.get("dimension").getAsString();
+                } catch (JsonParseException|NullPointerException e) {
+                    nullOrAbsentRules ++;
+                }
+                ConfigElem e = new ConfigElem(id,toggle,entity,source,projectile,weapon,dimension);
                 disabled.add(e);
             }
-            ConditionalKeepInventoryMod.broadcastOp("Config successfully (re)loaded from file");
+
+            ConditionalKeepInventoryMod.broadcastOp("Config successfully (re)loaded from file",commandSource);
+
         } catch (IOException e) {
-            ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file not found. Creating a new one");
-            writeConfig(true,true,false,new HashSet<>(),new HashSet<>());
+
+            ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file not found. Creating a new one",commandSource);
+            writeConfig(true,true,false,new HashSet<>(),new HashSet<>(),commandSource);
+
         } catch (ClassCastException e) {
-            if (backupConfig()) ConditionalKeepInventoryMod.broadcastOp(
-                    new LiteralText("ConditionalKeepInventory config file empty or incorrect, created a backup and rewriting raw one"));
-            else ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file empty or incorrect, failed creating a backup, rewriting raw one");
-            writeConfig(true,true,false,new HashSet<>(),new HashSet<>());
+
+            if (backupConfig(commandSource)) ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file empty or incorrect, created a backup and rewriting raw one",commandSource);
+            else ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file empty or incorrect, failed creating a backup, rewriting raw one",commandSource);
+            writeConfig(true,true,false,new HashSet<>(),new HashSet<>(),commandSource);
+
         } catch (JsonParseException e) {
-            ConditionalKeepInventoryMod.broadcastOp("Error while parsing the config file. Loading with raw config");
-            ConditionalKeepInventoryMod.broadcastOp("Warning: edit the config via command will overwrite the wrong config! Do a backup before Saving anything");
+
+            ConditionalKeepInventoryMod.broadcastOp("Error while parsing the config file. Loading with raw config",commandSource);
+            ConditionalKeepInventoryMod.broadcastOp("Warning: edit the config via command will overwrite the wrong config! Do a backup before Saving anything",commandSource);
         }
         LogManager.getLogger().info(String.format("Skipped over %d rules for conditional KeepInventory",nullOrAbsentRules));
     }
 
-    public static void writeConfig(boolean toggle, boolean curse, boolean startBackup, Set<ConfigElem> whitelist, Set<ConfigElem> blacklist) {
+    public static void writeConfig(boolean toggle, boolean curse, boolean startBackup, Set<ConfigElem> whitelist, Set<ConfigElem> blacklist, ServerCommandSource commandSource) {
         ConfigFileManager.toggle = toggle;
         ConfigFileManager.curse = curse;
         enabled = whitelist;
@@ -175,6 +197,7 @@ public class ConfigFileManager {
             if (elem.getSource() != null) obj.addProperty("source",elem.getSource());
             if (elem.getProjectile() != null) obj.addProperty("projectile",elem.getProjectile());
             if (elem.getWeapon() != null) obj.addProperty("held_item",elem.getWeapon());
+            if (elem.getDimenstion() != null) obj.addProperty("dimension",elem.getDimenstion());
             wl.add(obj);
         }
         for (ConfigElem elem : blacklist) {
@@ -188,6 +211,7 @@ public class ConfigFileManager {
             if (elem.getSource() != null) obj.addProperty("source",elem.getSource());
             if (elem.getProjectile() != null) obj.addProperty("projectile",elem.getProjectile());
             if (elem.getWeapon() != null) obj.addProperty("held_item",elem.getWeapon());
+            if (elem.getDimenstion() != null) obj.addProperty("dimension",elem.getDimenstion());
             bl.add(obj);
         }
         config.addProperty("enabled",toggle);
@@ -200,22 +224,22 @@ public class ConfigFileManager {
             String configStr = parseJson(config);
             file.write(configStr);
             file.close();
-            ConditionalKeepInventoryMod.broadcastOp("Successfully wrote the config file from given data");
+            ConditionalKeepInventoryMod.broadcastOp("Successfully wrote the config file from given data",commandSource);
         } catch (IOException e) {
-            ConditionalKeepInventoryMod.broadcastOp("Error while trying to write the config file. Please check manually for any problem");
+            ConditionalKeepInventoryMod.broadcastOp("Error while trying to write the config file. Please check manually for any problem",commandSource);
             ConditionalKeepInventoryMod.LOGGER.error(e);
         }
     }
 
-    public static boolean backupConfig() {
+    public static boolean backupConfig(ServerCommandSource source) {
         try {
             Path backupFolder = Paths.get("config/backups/conditionalKeepInventory/");
-            if (!backupFolder.toFile().mkdirs()) ConditionalKeepInventoryMod.broadcastOp("Successfully created missing backup folder");
+            if (!backupFolder.toFile().mkdirs()) ConditionalKeepInventoryMod.broadcastOp("Successfully created missing backup folder",source);
             String fileName = getNewBackupName();
             Path backupDest = Paths.get(String.format("config/backups/conditionalKeepInventory/%s",fileName));
             Path backupFile = Paths.get("config/conditionalKeepInventory.json");
             Files.copy(backupFile,backupDest,REPLACE_EXISTING,COPY_ATTRIBUTES);
-            ConditionalKeepInventoryMod.broadcastOp(String.format("Backup config file created under %s",backupDest));
+            ConditionalKeepInventoryMod.broadcastOp(String.format("Backup config file created under %s",backupDest),source);
             return true;
         } catch (IOException e) {
             ConditionalKeepInventoryMod.LOGGER.error(e);
@@ -232,17 +256,17 @@ public class ConfigFileManager {
         return String.format("%d#conditionalKeepInventory.json",i);
     }
 
-    public static boolean restoreBackup(int id) {
+    public static boolean restoreBackup(int id,ServerCommandSource source) {
         List<String> backupFiles = Arrays.asList(Objects.requireNonNull(new File("config/backups/conditionalKeepInventory/").list()));
         if (!(backupFiles.contains(String.format("%d#conditionalKeepInventory.json",id)))) return false;
         try {
             Path backupFile = Paths.get(String.format("config/backups/conditionalKeepInventory/%d#conditionalKeepInventory.json",id));
             Path configFile = Paths.get("config/conditionalKeepInventory.json");
             Files.copy(backupFile,configFile,COPY_ATTRIBUTES,REPLACE_EXISTING);
-            ConditionalKeepInventoryMod.LOGGER.info(String.format("Config backup with id %d successfully restored",id));
+            ConditionalKeepInventoryMod.broadcastOp(String.format("Config backup with id %d successfully restored",id),source);
             return true;
         } catch (IOException e) {
-            ConditionalKeepInventoryMod.LOGGER.error(e);
+            ConditionalKeepInventoryMod.broadcastOp(e.toString(),source);
             return false;
         }
     }
