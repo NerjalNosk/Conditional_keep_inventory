@@ -17,41 +17,19 @@ import java.util.*;
 public class ConfigFileManager {
 
     private static final JsonParser parser = new JsonParser();
-    private static boolean toggle = false;
-    private static boolean curse = true;
-    private static Set<ConfigElem> enabled = new HashSet<>();
-    private static Set<ConfigElem> disabled = new HashSet<>();
     private static int nullOrAbsentRules = 0;
-    private static boolean backupOnStartup = false;
 
-    public static boolean isEnabled() {
-        return toggle;
-    }
-    public static boolean doCurse() {
-        return curse;
-    }
-    public static Set<ConfigElem> whitelist() {
-        return enabled;
-    }
-    public static Set<ConfigElem> blacklist() {
-        return disabled;
-    }
-    public static boolean startupBackup() {
-        return backupOnStartup;
-    }
-
-
-    public static void readConfig(ServerCommandSource commandSource) {
+    public static ConfigData readConfig(ServerCommandSource commandSource) {
         try {
             FileReader file = new FileReader("config/conditionalKeepInventory.json");
             JsonObject config = (JsonObject) parser.parse(file);
             file.close();
 
-            toggle = config.get("enabled").getAsBoolean();
-            curse = config.get("doVanishingCurse").getAsBoolean();
-            backupOnStartup = config.get("doBackupOnStartup").getAsBoolean();
-            enabled = new HashSet<>();
-            disabled = new HashSet<>();
+            boolean isEnabled = config.get("enabled").getAsBoolean();
+            boolean curse = config.get("doVanishingCurse").getAsBoolean();
+            boolean backupOnStartup = config.get("doBackupOnStartup").getAsBoolean();
+            Set<ConfigElem> enabled = new HashSet<>();
+            Set<ConfigElem> disabled = new HashSet<>();
 
             JsonArray whitelist = config.get("whitelist").getAsJsonArray();
             JsonArray blacklist = config.get("blacklist").getAsJsonArray();
@@ -158,6 +136,9 @@ public class ConfigFileManager {
             }
 
             ConditionalKeepInventoryMod.broadcastOp("Config successfully (re)loaded from file",commandSource);
+            LogManager.getLogger().info(String.format("Skipped over %d rules for conditional KeepInventory",nullOrAbsentRules));
+
+            return new ConfigData(isEnabled,curse,enabled,disabled,backupOnStartup);
 
         } catch (IOException e) {
 
@@ -175,14 +156,10 @@ public class ConfigFileManager {
             ConditionalKeepInventoryMod.broadcastOp("Error while parsing the config file. Loading with raw config",commandSource);
             ConditionalKeepInventoryMod.broadcastOp("Warning: edit the config via command will overwrite the wrong config! Do a backup before Saving anything",commandSource);
         }
-        LogManager.getLogger().info(String.format("Skipped over %d rules for conditional KeepInventory",nullOrAbsentRules));
+        return ConfigFileManager.readConfig(commandSource);
     }
 
     public static void writeConfig(boolean toggle, boolean curse, boolean startBackup, Set<ConfigElem> whitelist, Set<ConfigElem> blacklist, ServerCommandSource commandSource) {
-        ConfigFileManager.toggle = toggle;
-        ConfigFileManager.curse = curse;
-        enabled = whitelist;
-        disabled = blacklist;
         JsonObject config = new JsonObject();
         JsonArray wl = new JsonArray();
         JsonArray bl = new JsonArray();

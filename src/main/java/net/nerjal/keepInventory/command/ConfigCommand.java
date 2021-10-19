@@ -9,12 +9,16 @@ import net.minecraft.entity.Entity;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.world.World;
 import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
 import net.nerjal.keepInventory.Runnable;
 import net.nerjal.keepInventory.config.ConfigElem;
 import net.nerjal.keepInventory.config.ListComparator;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -32,6 +36,7 @@ public class ConfigCommand {
                 .requires((source -> source.hasPermissionLevel(2)))
                 .executes(context -> info(context.getSource()))
                 .then(literal("show")
+                        .then(literal("worlds").executes(ConfigCommand::showWorlds))
                         .then(argument("list",list())
                                 .executes(ConfigCommand::showList)
                                 .then(argument("id",integer(1))
@@ -222,6 +227,16 @@ public class ConfigCommand {
                 display
         )),false);
 
+        return 0;
+    }
+    private static int showWorlds(CommandContext<ServerCommandSource> context) {
+        Collection<RegistryKey<World>> collection = context.getSource().getWorldKeys();
+        List<String> stringList = new ArrayList<>();
+        for (RegistryKey<World> key : collection) {
+            stringList.add(key.getValue().toString());
+        }
+        String str = String.format("The following worlds are currently registered: %s",String.join(", ",stringList));
+        context.getSource().sendFeedback(new LiteralText(str),false);
         return 0;
     }
     private static int rem(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {

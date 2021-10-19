@@ -27,7 +27,7 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
     public static GameRules.Key<GameRules.BooleanRule> conditionalKeepInventoryRule;
     public static GameRules.Key<GameRules.BooleanRule> conditionalDoVanishing;
     public static final Logger LOGGER = LogManager.getLogger();
-    private static final ConfigData config = new ConfigData(null);
+    private static final ConfigData config = ConfigData.readFile(null);
     private static final Map<UUID,Validation> liveDamageData = new HashMap<>();
     private static boolean started = false;
 

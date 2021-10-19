@@ -14,14 +14,18 @@ public class ConfigData {
     private boolean toggle;
     private boolean curse;
     private boolean backupOnStartup;
-    public ConfigData(ServerCommandSource source) {
-        ConfigFileManager.readConfig(source);
-        this.toggle = ConfigFileManager.isEnabled();
-        this.curse = ConfigFileManager.doCurse();
-        this.whitelist = ConfigFileManager.whitelist();
-        this.blacklist = ConfigFileManager.blacklist();
-        this.backupOnStartup = ConfigFileManager.startupBackup();
+
+    public ConfigData(boolean toggle, boolean curse, Set<ConfigElem> whitelist, Set<ConfigElem> blacklist, boolean backupOnStartup) {
+        this.toggle = toggle;
+        this.curse = curse;
+        this.whitelist = whitelist;
+        this.blacklist = blacklist;
+        this.backupOnStartup = backupOnStartup;
     }
+    public static ConfigData readFile(ServerCommandSource source) {
+        return ConfigFileManager.readConfig(source);
+    }
+
     public boolean isEnabled() {
         return this.toggle;
     }
@@ -30,6 +34,12 @@ public class ConfigData {
     }
     public boolean doStartBackup() {
         return this.backupOnStartup;
+    }
+    protected Set<ConfigElem> getWhitelist() {
+        return this.whitelist;
+    }
+    protected Set<ConfigElem> getBlacklist() {
+        return this.blacklist;
     }
     public void enable() {
         this.toggle = true;
@@ -77,11 +87,11 @@ public class ConfigData {
         ConfigFileManager.writeConfig(this.toggle,this.curse,this.backupOnStartup,this.whitelist,this.blacklist,source);
     }
     public void reloadConfig(ServerCommandSource source) {
-        ConfigFileManager.readConfig(source);
-        this.toggle = ConfigFileManager.isEnabled();
-        this.curse = ConfigFileManager.doCurse();
-        this.whitelist = ConfigFileManager.whitelist();
-        this.blacklist = ConfigFileManager.blacklist();
+        ConfigData data = ConfigFileManager.readConfig(source);
+        this.toggle = data.isEnabled();
+        this.curse = data.doCurse();
+        this.whitelist = data.getWhitelist();
+        this.blacklist = data.getBlacklist();
     }
     public boolean backupConfig(ServerCommandSource source) {
         return ConfigFileManager.backupConfig(source);
