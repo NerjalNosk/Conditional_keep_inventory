@@ -20,6 +20,7 @@ Through a config file and a command, I have made this mod so that you can set bo
  * [Modrinth](https://modrinth.com/mod/conditional_keep_inventory)
  * [Source code](https://github.com/NerjalNosk/Conditional_keep_inventory)
  * [Wiki](https://github.com/NerjalNosk/Conditional_keep_inventory/wiki)
+ * [Mod showcase](https://youtu.be/sC8-bpDJmlg)
  * [Issues](https://github.com/NerjalNosk/Conditional_keep_inventory/wiki)
  * [Fabric API (modrinth)](https://modrinth.com/mod/fabric-api)
  * [Fabric API (curseforge)](https://www.curseforge.com/minecraft/mc-mods/fabric-api)
