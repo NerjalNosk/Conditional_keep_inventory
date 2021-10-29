@@ -21,7 +21,7 @@ Through a config file and a command, I have made this mod so that you can set bo
  * [Source code](https://github.com/NerjalNosk/Conditional_keep_inventory)
  * [Wiki](https://github.com/NerjalNosk/Conditional_keep_inventory/wiki)
  * [Mod showcase](https://youtu.be/sC8-bpDJmlg)
- * [Issues](https://github.com/NerjalNosk/Conditional_keep_inventory/wiki)
+ * [Issues](https://github.com/NerjalNosk/Conditional_keep_inventory/issues)
  * [Fabric API (modrinth)](https://modrinth.com/mod/fabric-api)
  * [Fabric API (curseforge)](https://www.curseforge.com/minecraft/mc-mods/fabric-api)
  * [Fabric Mod Loader](https://fabricmc.net/use/)
