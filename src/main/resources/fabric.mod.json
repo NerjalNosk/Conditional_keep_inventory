@@ -3,7 +3,7 @@
   "id": "conditional_keepinventory",
   "version": "${version}",
   "name": "Conditional Keep Inventory",
-  "description": "Allows to customize whether the keepInventory triggers or not, depending on the death cause",
+  "description": "Allows to customize whether the keepInventory triggers or not, depending on the death cause and more",
   "authors": [
     "Nerjal Nosk"
   ],
@@ -36,7 +36,8 @@
   "custom": {
     "modmenu": {
       "links": {
-        "modmenu.discord": "https://discord.gg/ckMCAtVrBW"
+        "modmenu.discord": "https://discord.gg/ckMCAtVrBW",
+        "modmenu.wiki": "https://github.com/NerjalNosk/Conditional_keep_inventory/wiki"
       }
     }
   }

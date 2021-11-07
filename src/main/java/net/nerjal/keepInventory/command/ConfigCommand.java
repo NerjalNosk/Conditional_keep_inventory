@@ -25,7 +25,7 @@ import java.util.Objects;
 import static net.minecraft.server.command.CommandManager.*;
 import static com.mojang.brigadier.arguments.BoolArgumentType.*;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.*;
-import static net.nerjal.keepInventory.command.CDIListArgumentType.*;
+import static net.nerjal.keepInventory.command.CKIListArgumentType.*;
 import static net.nerjal.keepInventory.command.JsonArgumentType.*;
 
 import static net.nerjal.keepInventory.ConditionalKeepInventoryMod.*;
@@ -46,17 +46,19 @@ public class ConfigCommand {
                         .then(argument("list",list())
                                 .then(argument("data",
                                         json()
-                                                .addPossibleKeys(List.of("toggle","killer_entity","source","projectile","held_item","dimension"))
+                                                .addPossibleKeys(List.of("toggle","attacker","source","projectile","weapon","dimension"))
                                                 .enablePossibleKeysRestriction()
-                                        ).executes(ConfigCommand::add)
+                                                .addTypedKey("toggle",JsonPropertyType.BOOLEAN))
+                                        .executes(ConfigCommand::add)
                                 )))
                 .then(literal("edit")
                         .then(argument("list",list())
                                 .then(argument("id",integer())
                                         .then(argument("data",
                                                 json()
-                                                        .addPossibleKeys(List.of("toggle","killer_entity","source","projectile","held_item","dimension"))
-                                                        .enablePossibleKeysRestriction())
+                                                        .addPossibleKeys(List.of("toggle","attacker","source","projectile","weapon","dimension","head","chest","legs","feet","hand_1","hand_2"))
+                                                        .enablePossibleKeysRestriction()
+                                                        .addTypedKey("toggle",JsonPropertyType.BOOLEAN))
                                                 .executes(ConfigCommand::edit)
                                         ))))
                 .then(literal("toggle")
@@ -106,7 +108,7 @@ public class ConfigCommand {
     }
     private static int add(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
 
-        ListComparator l = Objects.requireNonNull(ListComparator.test(CDIListArgumentType.getList(context,"list")));
+        ListComparator l = Objects.requireNonNull(ListComparator.test(CKIListArgumentType.getList(context,"list")));
         JsonObject json = getJson(context,"data");
         ConfigElem elem = ConfigElem.parseJson(json, l);
 
@@ -150,7 +152,7 @@ public class ConfigCommand {
     }
     private static int edit(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
 
-        ListComparator l = Objects.requireNonNull(ListComparator.test(CDIListArgumentType.getList(context,"list")));
+        ListComparator l = Objects.requireNonNull(ListComparator.test(CKIListArgumentType.getList(context,"list")));
         int id = getInteger(context,"id");
         JsonObject json = getJson(context,"data");
         ConfigElem tElem = ConfigElem.parseJson(json, l);
@@ -160,7 +162,7 @@ public class ConfigCommand {
             return 2;
         }
 
-        ConfigElem elem = new ConfigElem(id,tElem.getToggle(),tElem.getKillerEntity(),tElem.getSource(),tElem.getProjectile(),tElem.getWeapon(),tElem.getDimenstion());
+        ConfigElem elem = new ConfigElem(id,tElem.getToggle(),tElem.getKillerEntity(),tElem.getSource(),tElem.getProjectile(),tElem.getWeapon(),tElem.getDimension(),tElem.getStuff());
 
         boolean confirm;
         if (l.check == 1) confirm = ConditionalKeepInventoryMod.editWhitelist(elem);
@@ -198,7 +200,7 @@ public class ConfigCommand {
     }
     private static int showList(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
 
-        ListComparator l = Objects.requireNonNull(ListComparator.test(CDIListArgumentType.getList(context,"list")));
+        ListComparator l = Objects.requireNonNull(ListComparator.test(CKIListArgumentType.getList(context,"list")));
 
         context.getSource().sendFeedback(new LiteralText(l.check == 1 ? ConditionalKeepInventoryMod.showListWhitelist() : ConditionalKeepInventoryMod.showListBlacklist()),false);
 
@@ -206,7 +208,7 @@ public class ConfigCommand {
     }
     private static int show(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
 
-        ListComparator l = Objects.requireNonNull(ListComparator.test(CDIListArgumentType.getList(context,"list")));
+        ListComparator l = Objects.requireNonNull(ListComparator.test(CKIListArgumentType.getList(context,"list")));
         int id = getInteger(context,"id");
 
         String display = l.check == 1 ? ConditionalKeepInventoryMod.showWhitelistElem(id) : ConditionalKeepInventoryMod.showBlacklistElem(id);
@@ -241,7 +243,7 @@ public class ConfigCommand {
     }
     private static int rem(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
 
-        ListComparator l = Objects.requireNonNull(ListComparator.test(CDIListArgumentType.getList(context,"list")));
+        ListComparator l = Objects.requireNonNull(ListComparator.test(CKIListArgumentType.getList(context,"list")));
         int id = getInteger(context,"id");
 
         boolean confirm = l.check == 1 ? ConditionalKeepInventoryMod.remWhitelist(id) : ConditionalKeepInventoryMod.remBlacklist(id);
@@ -265,7 +267,7 @@ public class ConfigCommand {
     }
     private static int toggle(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
 
-        ListComparator l = Objects.requireNonNull(ListComparator.test(CDIListArgumentType.getList(context,"list")));
+        ListComparator l = Objects.requireNonNull(ListComparator.test(CKIListArgumentType.getList(context,"list")));
         int id = getInteger(context,"id");
 
         BoolObj confirm = l.check == 1 ? toggleWhitelist(id) : toggleBlacklist(id);

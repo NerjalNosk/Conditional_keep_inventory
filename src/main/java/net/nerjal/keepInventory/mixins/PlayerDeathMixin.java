@@ -65,8 +65,8 @@ public abstract class PlayerDeathMixin extends LivingEntity {
     protected void checkDeath(DamageSource source, CallbackInfo ci) {
         String name = this.getName().asString();
         ConditionalKeepInventoryMod.LOGGER.info(String.format("Death dimension key: %s",this.world.getRegistryKey().getValue().toString()));
-        boolean whitelisted = ConditionalKeepInventoryMod.isWhitelisted(source,this.world.getRegistryKey().getValue().toString());
-        boolean blacklisted = ConditionalKeepInventoryMod.isBlacklisted(source,this.world.getRegistryKey().toString());
+        boolean whitelisted = ConditionalKeepInventoryMod.isWhitelisted(source,this.world.getRegistryKey().getValue().toString(),this);
+        boolean blacklisted = ConditionalKeepInventoryMod.isBlacklisted(source,this.world.getRegistryKey().getValue().toString(),this);
         ConditionalKeepInventoryMod.LOGGER.info(String.format("Damage! Name: %s ; Whitelisted: %b ; Blacklisted: %b",name,whitelisted,blacklisted));
     }
 

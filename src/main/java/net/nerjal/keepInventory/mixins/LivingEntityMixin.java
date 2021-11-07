@@ -23,8 +23,8 @@ public abstract class LivingEntityMixin extends Entity {
     protected void updatePlayerDamageData(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         for (PlayerEntity player : this.world.getPlayers()) {
             if (player.getUuid().equals(this.uuid)) {
-                ConditionalKeepInventoryMod.LOGGER.info(String.format("Death dimension key: %s",this.world.getRegistryKey().getValue().toString()));
-                ConditionalKeepInventoryMod.updatePlayerDamage(this.uuid,source,this.world.getRegistryKey().getValue().toString());
+                //ConditionalKeepInventoryMod.LOGGER.info(String.format("Death dimension key: %s",this.world.getRegistryKey().getValue().toString()));
+                ConditionalKeepInventoryMod.updatePlayerDamage(this.uuid,source,this.world.getRegistryKey().getValue().toString(),player);
                 break;
             }
         }

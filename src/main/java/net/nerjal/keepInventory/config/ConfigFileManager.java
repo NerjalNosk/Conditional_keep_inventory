@@ -3,7 +3,6 @@ package net.nerjal.keepInventory.config;
 import com.google.gson.*;
 import net.minecraft.server.command.ServerCommandSource;
 import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
-import org.apache.logging.log4j.LogManager;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -17,7 +16,6 @@ import java.util.*;
 public class ConfigFileManager {
 
     private static final JsonParser parser = new JsonParser();
-    private static int nullOrAbsentRules = 0;
 
     public static ConfigData readConfig(ServerCommandSource commandSource) {
         try {
@@ -25,131 +23,22 @@ public class ConfigFileManager {
             JsonObject config = (JsonObject) parser.parse(file);
             file.close();
 
-            boolean isEnabled = config.get("enabled").getAsBoolean();
-            boolean curse = config.get("doVanishingCurse").getAsBoolean();
-            boolean backupOnStartup = config.get("doBackupOnStartup").getAsBoolean();
-            Set<ConfigElem> enabled = new HashSet<>();
-            Set<ConfigElem> disabled = new HashSet<>();
-
-            JsonArray whitelist = config.get("whitelist").getAsJsonArray();
-            JsonArray blacklist = config.get("blacklist").getAsJsonArray();
-
-            for (JsonElement elem : whitelist) {
-                JsonObject elemObj = elem.getAsJsonObject();
-                int id;
-                boolean toggle = true;
-                String entity = null;
-                String source = null;
-                String projectile = null;
-                String weapon = null;
-                String dimension = null;
-                try {
-                    id = elemObj.get("id").getAsInt();
-                    if (id == 0) continue;
-                } catch (JsonParseException|NullPointerException e) {
-                    e.printStackTrace();
-                    continue;
-                }
-                try {
-                    toggle = elemObj.get("toggle").getAsBoolean();
-                } catch (JsonParseException|NullPointerException e) {
-                    nullOrAbsentRules ++;
-                }
-                try {
-                    entity = elemObj.get("killer_entity").getAsString();
-                } catch (JsonParseException|NullPointerException e) {
-                    nullOrAbsentRules ++;
-                }
-                try {
-                    source = elemObj.get("source").getAsString();
-                } catch (JsonParseException|NullPointerException e) {
-                    nullOrAbsentRules ++;
-                }
-                try {
-                    projectile = elemObj.get("projectile").getAsString();
-                } catch (JsonParseException|NullPointerException e) {
-                    nullOrAbsentRules ++;
-                }
-                try {
-                    weapon = elemObj.get("weapon").getAsString();
-                } catch (JsonParseException|NullPointerException e) {
-                    nullOrAbsentRules ++;
-                }
-                try {
-                    dimension = elemObj.get("dimension").getAsString();
-                } catch (JsonParseException|NullPointerException e) {
-                    nullOrAbsentRules ++;
-                }
-                if (entity == null && source == null && projectile == null && weapon == null) continue;
-                ConfigElem e = new ConfigElem(id,toggle,entity,source,projectile,weapon,dimension);
-                enabled.add(e);
-            }
-
-            for (JsonElement elem : blacklist) {
-                JsonObject elemObj = elem.getAsJsonObject();
-                int id;
-                boolean toggle = true;
-                String entity = null;
-                String source = null;
-                String projectile = null;
-                String weapon = null;
-                String dimension = null;
-                try {
-                    id = elemObj.get("id").getAsInt();
-                    if (id == 0) continue;
-                } catch (JsonParseException|NullPointerException e) {
-                    ConditionalKeepInventoryMod.LOGGER.error(e);
-                    continue;
-                }
-                try {
-                    toggle = elemObj.get("toggle").getAsBoolean();
-                } catch (JsonParseException|NullPointerException e) {
-                    nullOrAbsentRules ++;
-                }
-                try {
-                    entity = elemObj.get("killer_entity").getAsString();
-                } catch (JsonParseException|NullPointerException e) {
-                    nullOrAbsentRules ++;
-                }
-                try {
-                    source = elemObj.get("source").getAsString();
-                } catch (JsonParseException|NullPointerException e) {
-                    nullOrAbsentRules ++;
-                }
-                try {
-                    projectile = elemObj.get("projectile").getAsString();
-                } catch (JsonParseException|NullPointerException e) {
-                    nullOrAbsentRules ++;
-                }
-                try {
-                    weapon = elemObj.get("held_item").getAsString();
-                } catch (JsonParseException|NullPointerException e) {
-                    nullOrAbsentRules ++;
-                }
-                try {
-                    dimension = elemObj.get("dimension").getAsString();
-                } catch (JsonParseException|NullPointerException e) {
-                    nullOrAbsentRules ++;
-                }
-                ConfigElem e = new ConfigElem(id,toggle,entity,source,projectile,weapon,dimension);
-                disabled.add(e);
-            }
+            ConfigData t = ConfigData.fromJson(config);
 
             ConditionalKeepInventoryMod.broadcastOp("Config successfully (re)loaded from file",commandSource);
-            LogManager.getLogger().info(String.format("Skipped over %d rules for conditional KeepInventory",nullOrAbsentRules));
 
-            return new ConfigData(isEnabled,curse,enabled,disabled,backupOnStartup);
+            return t;
 
         } catch (IOException e) {
 
             ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file not found. Creating a new one",commandSource);
-            writeConfig(true,true,false,new HashSet<>(),new HashSet<>(),commandSource);
+            ConfigData.DEFAULT.updateConfig(commandSource);
 
         } catch (ClassCastException e) {
 
             if (backupConfig(commandSource)) ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file empty or incorrect, created a backup and rewriting raw one",commandSource);
             else ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file empty or incorrect, failed creating a backup, rewriting raw one",commandSource);
-            writeConfig(true,true,false,new HashSet<>(),new HashSet<>(),commandSource);
+            ConfigData.DEFAULT.updateConfig(commandSource);
 
         } catch (JsonParseException e) {
 
@@ -159,43 +48,7 @@ public class ConfigFileManager {
         return ConfigFileManager.readConfig(commandSource);
     }
 
-    public static void writeConfig(boolean toggle, boolean curse, boolean startBackup, Set<ConfigElem> whitelist, Set<ConfigElem> blacklist, ServerCommandSource commandSource) {
-        JsonObject config = new JsonObject();
-        JsonArray wl = new JsonArray();
-        JsonArray bl = new JsonArray();
-        for (ConfigElem elem : whitelist) {
-            if (elem.getId() == 0 || elem.getKillerEntity() == null && elem.getSource() == null && elem.getProjectile() == null && elem.getWeapon() == null) {
-                continue;
-            }
-            JsonObject obj = new JsonObject();
-            obj.addProperty("id",elem.getId());
-            obj.addProperty("toggle",elem.getToggle());
-            if (elem.getKillerEntity() != null) obj.addProperty("killer_entity",elem.getKillerEntity());
-            if (elem.getSource() != null) obj.addProperty("source",elem.getSource());
-            if (elem.getProjectile() != null) obj.addProperty("projectile",elem.getProjectile());
-            if (elem.getWeapon() != null) obj.addProperty("held_item",elem.getWeapon());
-            if (elem.getDimenstion() != null) obj.addProperty("dimension",elem.getDimenstion());
-            wl.add(obj);
-        }
-        for (ConfigElem elem : blacklist) {
-            if (elem.getId() == 0 || elem.getKillerEntity() == null && elem.getSource() == null && elem.getProjectile() == null && elem.getWeapon() == null) {
-                continue;
-            }
-            JsonObject obj = new JsonObject();
-            obj.addProperty("id",elem.getId());
-            obj.addProperty("toggle",elem.getToggle());
-            if (elem.getKillerEntity() != null) obj.addProperty("killer_entity",elem.getKillerEntity());
-            if (elem.getSource() != null) obj.addProperty("source",elem.getSource());
-            if (elem.getProjectile() != null) obj.addProperty("projectile",elem.getProjectile());
-            if (elem.getWeapon() != null) obj.addProperty("held_item",elem.getWeapon());
-            if (elem.getDimenstion() != null) obj.addProperty("dimension",elem.getDimenstion());
-            bl.add(obj);
-        }
-        config.addProperty("enabled",toggle);
-        config.addProperty("doVanishingCurse",curse);
-        config.addProperty("doBackupOnStartup",startBackup);
-        config.add("whitelist",wl);
-        config.add("blacklist",bl);
+    public static void writeConfig(JsonObject config, ServerCommandSource commandSource) {
         try {
             FileWriter file = new FileWriter("config/conditionalKeepInventory.json");
             String configStr = parseJson(config);
@@ -275,7 +128,8 @@ public class ConfigFileManager {
             }
             out.append("  ".repeat(space)).append("]");
             return out.toString();
-        } else if (json.isJsonObject()) {
+        }
+        if (json.isJsonObject()) {
             JsonObject object = json.getAsJsonObject();
             out.append("{\n");
             for (Map.Entry<String,JsonElement> entry : object.entrySet()) {

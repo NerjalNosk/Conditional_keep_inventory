@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.LiteralText;
@@ -122,11 +123,11 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
     public static boolean restoreBackup(int id,ServerCommandSource source) {
         return config.restoreBackup(id,source);
     }
-    public static boolean isWhitelisted(DamageSource source,String worldKey) {
-        return config.isWhitelisted(source,worldKey);
+    public static boolean isWhitelisted(DamageSource source, String worldKey, LivingEntity victim) {
+        return config.isWhitelisted(source,worldKey,victim);
     }
-    public static boolean isBlacklisted(DamageSource source,String worldKey) {
-        return config.isBlacklisted(source,worldKey);
+    public static boolean isBlacklisted(DamageSource source,String worldKey,LivingEntity victim) {
+        return config.isBlacklisted(source,worldKey,victim);
     }
     public static boolean editWhitelist(ConfigElem elem) {
         return config.editWhitelist(elem);
@@ -162,9 +163,9 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
         return config.listBackupFiles();
     }
 
-    public static void updatePlayerDamage(UUID playerUUID, DamageSource source,String worldKey) {
-        if (isWhitelisted(source,worldKey)) liveDamageData.put(playerUUID,Validation.WHITELIST);
-        else if (isBlacklisted(source,worldKey)) liveDamageData.put(playerUUID,Validation.BLACKLIST);
+    public static void updatePlayerDamage(UUID playerUUID, DamageSource source,String worldKey,LivingEntity victim) {
+        if (isWhitelisted(source,worldKey,victim)) liveDamageData.put(playerUUID,Validation.WHITELIST);
+        else if (isBlacklisted(source,worldKey,victim)) liveDamageData.put(playerUUID,Validation.BLACKLIST);
         else liveDamageData.put(playerUUID,Validation.NONE);
     }
     public static Validation getPlayerValidation(UUID playerUUID) {

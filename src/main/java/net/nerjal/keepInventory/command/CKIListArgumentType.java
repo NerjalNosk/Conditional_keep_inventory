@@ -16,15 +16,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
-public class CDIListArgumentType implements ArgumentType<String> {
+public class CKIListArgumentType implements ArgumentType<String> {
     private static final Collection<String> OPTIONS = Arrays.asList("Whitelist","Blacklist");
     private static final DynamicCommandExceptionType UNKNOWN_LIST = new DynamicCommandExceptionType((name) -> new LiteralText("No such list " + name));
 
-    private CDIListArgumentType() {}
+    private CKIListArgumentType() {}
 
     @Contract(value = " -> new", pure = true)
-    public static @NotNull CDIListArgumentType list() {
-        return new CDIListArgumentType();
+    public static @NotNull CKIListArgumentType list() {
+        return new CKIListArgumentType();
     }
 
     public static String getList(final @NotNull CommandContext<?> context, final String name) throws CommandSyntaxException {

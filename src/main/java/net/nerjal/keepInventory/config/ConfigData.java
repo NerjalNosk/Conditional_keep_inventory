@@ -1,19 +1,56 @@
 package net.nerjal.keepInventory.config;
 
+import com.google.gson.*;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.command.ServerCommandSource;
+import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
+import net.nerjal.keepInventory.Runnable;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static net.nerjal.keepInventory.ConditionalKeepInventoryMod.*;
 
 public class ConfigData {
-    private Set<ConfigElem> whitelist;
-    private Set<ConfigElem> blacklist;
     private boolean toggle;
     private boolean curse;
     private boolean backupOnStartup;
+    private Set<ConfigElem> whitelist;
+    private Set<ConfigElem> blacklist;
+    private static boolean debug;
+
+    public static int lastVersion = 1;
+    private static final List<Runnable> updaters = Arrays.asList(
+            new Runnable() {
+                @Override
+                public void run(Object[] args) throws Exception {
+                    if (! (args[0] instanceof JsonObject json)) return;
+                    if (json.has("version")) return;
+                    json.getAsJsonArray("whitelist").forEach(elem -> {
+                        if (elem instanceof JsonObject elemObj) {
+                            elemObj.add("attacker",elemObj.get("killer_entity"));
+                            elemObj.add("weapon",elemObj.get("held_item"));
+                            elemObj.remove("killer_entity");
+                            elemObj.remove("held_item");
+                        }
+                    });
+                    json.getAsJsonArray("blacklist").forEach(elem -> {
+                        if (elem instanceof JsonObject elemObj) {
+                            elemObj.add("attacker",elemObj.get("killer_entity"));
+                            elemObj.add("weapon",elemObj.get("held_item"));
+                            elemObj.remove("killer_entity");
+                            elemObj.remove("held_item");
+                        }
+                    });
+                }
+            }
+    );
+
+    public static final ConfigData DEFAULT = new ConfigData(true,true,new HashSet<>(),new HashSet<>(),false);
 
     public ConfigData(boolean toggle, boolean curse, Set<ConfigElem> whitelist, Set<ConfigElem> blacklist, boolean backupOnStartup) {
         this.toggle = toggle;
@@ -26,6 +63,68 @@ public class ConfigData {
         return ConfigFileManager.readConfig(source);
     }
 
+    public static ConfigData fromJson(JsonObject json) throws JsonParseException {
+        JsonObject config = updateJson(json);
+        boolean debug = false;
+        boolean isEnabled = config.get("enabled").getAsBoolean();
+        boolean curse = config.get("doVanishingCurse").getAsBoolean();
+        boolean backupOnStartup = config.get("doBackupOnStartup").getAsBoolean();
+        try {
+            debug = config.get("debug").getAsBoolean();
+        } catch (JsonParseException|NullPointerException e) {
+            LOGGER.info("CKI Debug off");
+        }
+        Set<ConfigElem> enabled = new HashSet<>();
+        Set<ConfigElem> disabled = new HashSet<>();
+
+        JsonArray whitelist = config.get("whitelist").getAsJsonArray();
+        JsonArray blacklist = config.get("blacklist").getAsJsonArray();
+
+        for (JsonElement elem : whitelist) {
+            ConfigElem e = ConfigElem.fromJson(elem.getAsJsonObject());
+            if (e == null) continue;
+            enabled.add(e);
+        }
+
+        for (JsonElement elem : blacklist) {
+            ConfigElem e = ConfigElem.fromJson(elem.getAsJsonObject());
+            if (e == null) continue;
+            disabled.add(e);
+        }
+        ConfigData t = new ConfigData(isEnabled,curse,enabled,disabled,backupOnStartup);
+        setDebug(debug);
+        return t;
+    }
+
+    private static JsonObject updateJson(JsonObject json) throws JsonParseException {
+        int ver;
+        try {
+            ver = json.get("version").getAsInt();
+        } catch ( JsonParseException|NullPointerException e) {
+            ver = 0;
+        }
+        if (debug) LOGGER.debug(String.format("JSON version: %d",ver));
+        Object[] args = {json};
+        while (ver < lastVersion) {
+            try {
+                updaters.get(ver).run(args);
+            } catch (Exception e) {
+                throw (JsonParseException) e;
+            }
+            ver++;
+        }
+        return json;
+    }
+
+    protected static void setDebug(boolean b) {
+        debug = b;
+    }
+
+    // external accessors
+
+    public boolean doDebug() {
+        return debug;
+    }
     public boolean isEnabled() {
         return this.toggle;
     }
@@ -84,7 +183,18 @@ public class ConfigData {
         return false;
     }
     public void updateConfig(ServerCommandSource source) {
-        ConfigFileManager.writeConfig(this.toggle,this.curse,this.backupOnStartup,this.whitelist,this.blacklist,source);
+        JsonObject config = new JsonObject();
+        JsonArray wl = new JsonArray();
+        JsonArray bl = new JsonArray();
+        this.whitelist.forEach(elem -> wl.add(elem.toJson()));
+        this.blacklist.forEach(elem -> bl.add(elem.toJson()));
+        config.addProperty("enabled",this.toggle);
+        config.addProperty("doVanishingCurse",this.curse);
+        config.addProperty("doBackupOnStartup",this.backupOnStartup);
+        config.addProperty("version",lastVersion);
+        config.add("whitelist",wl);
+        config.add("blacklist",bl);
+        ConfigFileManager.writeConfig(config,source);
     }
     public void reloadConfig(ServerCommandSource source) {
         ConfigData data = ConfigFileManager.readConfig(source);
@@ -99,25 +209,17 @@ public class ConfigData {
     public boolean restoreBackup(int id,ServerCommandSource source) {
         return ConfigFileManager.restoreBackup(id,source);
     }
-    public boolean isWhitelisted(DamageSource source,String worldKey) {
+    public boolean isWhitelisted(DamageSource source, String worldKey, LivingEntity victim) {
         for (ConfigElem elem : this.whitelist) {
-            if (elem.meetsCondition(source,worldKey)) return true;
+            if (elem.meetsCondition(source,worldKey,victim)) return true;
         }
         return false;
     }
-    public boolean isBlacklisted(DamageSource source, String worldKey) {
+    public boolean isBlacklisted(DamageSource source, String worldKey, LivingEntity victim) {
         for (ConfigElem elem : this.blacklist) {
-            if (elem.meetsCondition(source,worldKey)) return true;
+            if (elem.meetsCondition(source,worldKey,victim)) return true;
         }
         return false;
-    }
-    public boolean isWhitelisted(int id) {
-        ConfigElem elem = new ConfigElem(id,true,null,null,null,null,null);
-        return whitelist.contains(elem);
-    }
-    public boolean isBlacklisted(int id) {
-        ConfigElem elem = new ConfigElem(id,true,null,null,null,null,null);
-        return blacklist.contains(elem);
     }
     public boolean editWhitelist(ConfigElem elem) {
         return this.whitelist.remove(elem) && this.whitelist.add(elem);
@@ -129,7 +231,7 @@ public class ConfigData {
         int i = 1;
         int max = this.whitelist.size();
         while (i <= max) {
-            ConfigElem tempElem = new ConfigElem(i,false,null,null,null,null,null);
+            ConfigElem tempElem = new ConfigElem(i,false,null,null,null,null,null,null);
             if (!this.whitelist.contains(tempElem)) return i;
             i++;
         }
@@ -139,7 +241,7 @@ public class ConfigData {
         int i = 1;
         int max = this.blacklist.size();
         while (i <= max) {
-            ConfigElem tempElem = new ConfigElem(i,false,null,null,null,null,null);
+            ConfigElem tempElem = new ConfigElem(i,false,null,null,null,null,null,null);
             if (!this.blacklist.contains(tempElem)) return i;
             i++;
         }
