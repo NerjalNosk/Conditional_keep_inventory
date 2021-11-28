@@ -1,11 +1,8 @@
 package net.nerjal.keepInventory.mixins;
 
 import com.mojang.authlib.GameProfile;
-import net.minecraft.entity.ExperienceOrbEntity;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;

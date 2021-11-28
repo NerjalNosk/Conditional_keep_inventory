@@ -29,19 +29,15 @@ public class CKIListArgumentType implements ArgumentType<String> {
 
     public static String getList(final @NotNull CommandContext<?> context, final String name) throws CommandSyntaxException {
         String val = context.getArgument(name,String.class);
-        return switch (val) {
-            case "Whitelist", "Blacklist" -> val;
-            default -> throw UNKNOWN_LIST.create(val);
-        };
+        if (val.equals("Whitelist") || val.equals("Blacklist")) return val;
+        throw UNKNOWN_LIST.create(val);
     }
 
     @Override
     public String parse(@NotNull StringReader reader) throws CommandSyntaxException {
         String val = reader.readUnquotedString();
-        return switch (val) {
-            case "Whitelist", "Blacklist" -> val;
-            default -> throw UNKNOWN_LIST.create(val);
-        };
+        if (val.equals("Whitelist") || val.equals("Blacklist")) return val;
+        throw UNKNOWN_LIST.create(val);
     }
 
     @Override

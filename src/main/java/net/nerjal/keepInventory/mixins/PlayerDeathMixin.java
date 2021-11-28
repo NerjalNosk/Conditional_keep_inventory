@@ -1,19 +1,15 @@
 package net.nerjal.keepInventory.mixins;
 
 import net.minecraft.entity.EntityType;
-//import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.LivingEntity;
-//import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
-//import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
 import net.nerjal.keepInventory.Validation;
 import org.spongepowered.asm.mixin.Mixin;
-//import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

@@ -34,17 +34,35 @@ public class ConfigElem {
         this.id = id;
         this.toggle = toggle;
         if (a == null) this.attackerOptions = null;
-        else this.attackerOptions = Set.copyOf(a);
+        else {
+            this.attackerOptions = new HashSet<>();
+            this.attackerOptions.addAll(a);
+        }
         if (s == null) this.sourceOptions = null;
-        else this.sourceOptions = Set.copyOf(s);
+        else {
+            this.sourceOptions = new HashSet<>();
+            this.sourceOptions.addAll(s);
+        }
         if (p == null) this.projectileOptions = null;
-        else this.projectileOptions = Set.copyOf(p);
+        else {
+            this.projectileOptions = new HashSet<>();
+            this.projectileOptions.addAll(p);
+        }
         if (w == null) this.weaponOptions = null;
-        else this.weaponOptions = Set.copyOf(w);
+        else {
+            this.weaponOptions = new HashSet<>();
+            this.weaponOptions.addAll(w);
+        }
         if (d == null) this.dimensionOptions = null;
-        else this.dimensionOptions = Set.copyOf(d);
+        else {
+            this.dimensionOptions = new HashSet<>();
+            this.dimensionOptions.addAll(d);
+        }
         if (st == null) this.stuffOptions = null;
-        else this.stuffOptions = Map.copyOf(st);
+        else {
+            this.stuffOptions = new HashMap<>();
+            this.stuffOptions.putAll(st);
+        }
     }
 
     public static ConfigElem fromJson(JsonObject json) {
@@ -292,9 +310,10 @@ public class ConfigElem {
 
     public boolean meetsCondition(DamageSource damage, String worldKey, LivingEntity victim) {
         if (!this.toggle) return false;
-        if (!(victim instanceof PlayerEntity player)) return false;
+        if (!(victim instanceof PlayerEntity)) return false;
         // --- do only uncomment the following line for debug purposes ---
         //ConditionalKeepInventoryMod.LOGGER.info(String.format("id: %d, source: %s, killerEntity: %s, targetName: %s",this.id,this.source,this.killerEntity,damage.getName()));
+        PlayerEntity player = (PlayerEntity) victim;
         if (this.sourceOptions != null && this.sourceOptions.size() != 0) {
             boolean b = false;
             for (String s : this.sourceOptions) {
@@ -459,9 +478,9 @@ public class ConfigElem {
 
     private boolean stuffMeetsCondition(PlayerEntity player) {
         if (this.stuffOptions.containsKey("head")) {
-            if (player.getInventory().getArmorStack(3).isEmpty() &! (this.stuffOptions.get("head").isEmpty() || this.stuffOptions.get("head").contains(""))) return false;
+            if (player.inventory.getArmorStack(3).isEmpty() &! (this.stuffOptions.get("head").isEmpty() || this.stuffOptions.get("head").contains(""))) return false;
             boolean test = false;
-            Item item = player.getInventory().getArmorStack(3).getItem();
+            Item item = player.inventory.getArmorStack(3).getItem();
             for (String s : this.stuffOptions.get("head")) {
                 Item target;
                 if (s.indexOf(':') < 0) target = Registry.ITEM.get(new Identifier(s));
@@ -475,9 +494,9 @@ public class ConfigElem {
             if (!test) return false;
         }
         if (this.stuffOptions.containsKey("chest")) {
-            if (player.getInventory().getArmorStack(2).isEmpty() &! (this.stuffOptions.get("chest") .isEmpty() || this.stuffOptions.get("chest").contains(""))) return false;
+            if (player.inventory.getArmorStack(2).isEmpty() &! (this.stuffOptions.get("chest") .isEmpty() || this.stuffOptions.get("chest").contains(""))) return false;
             boolean test = false;
-            Item item = player.getInventory().getArmorStack(2).getItem();
+            Item item = player.inventory.getArmorStack(2).getItem();
             for (String s : this.stuffOptions.get("chest")) {
                 Item target;
                 if (s.indexOf(':') < 0) target = Registry.ITEM.get(new Identifier(s));
@@ -491,9 +510,9 @@ public class ConfigElem {
             if (!test) return false;
         }
         if (this.stuffOptions.containsKey("legs")) {
-            if (player.getInventory().getArmorStack(1).isEmpty() &! (this.stuffOptions.get("legs") .isEmpty() || this.stuffOptions.get("legs").contains(""))) return false;
+            if (player.inventory.getArmorStack(1).isEmpty() &! (this.stuffOptions.get("legs") .isEmpty() || this.stuffOptions.get("legs").contains(""))) return false;
             boolean test = false;
-            Item item = player.getInventory().getArmorStack(1).getItem();
+            Item item = player.inventory.getArmorStack(1).getItem();
             for (String s : this.stuffOptions.get("legs")) {
                 Item target;
                 if (s.indexOf(':') < 0) target = Registry.ITEM.get(new Identifier(s));
@@ -507,9 +526,9 @@ public class ConfigElem {
             if (!test) return false;
         }
         if (this.stuffOptions.containsKey("feet")) {
-            if (player.getInventory().getArmorStack(0).isEmpty() &! (this.stuffOptions.get("feet") .isEmpty() || this.stuffOptions.get("feet").contains(""))) return false;
+            if (player.inventory.getArmorStack(0).isEmpty() &! (this.stuffOptions.get("feet") .isEmpty() || this.stuffOptions.get("feet").contains(""))) return false;
             boolean test = false;
-            Item item = player.getInventory().getArmorStack(0).getItem();
+            Item item = player.inventory.getArmorStack(0).getItem();
             for (String s : this.stuffOptions.get("feet")) {
                 Item target;
                 if (s.indexOf(':') < 0) target = Registry.ITEM.get(new Identifier(s));
@@ -616,7 +635,8 @@ public class ConfigElem {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof ConfigElem e)) return false;
+        if (!(o instanceof ConfigElem)) return false;
+        ConfigElem e = (ConfigElem) o;
         return e.getId() == id;
     }
 

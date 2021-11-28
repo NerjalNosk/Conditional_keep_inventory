@@ -17,7 +17,8 @@ public enum Validation {
     }
 
     public boolean compare(Object o) {
-        if (!(o instanceof Validation v)) return false;
+        if (!(o instanceof Validation)) return false;
+        Validation v = (Validation) o;
         return v.name.equals(this.name);
     }
 }

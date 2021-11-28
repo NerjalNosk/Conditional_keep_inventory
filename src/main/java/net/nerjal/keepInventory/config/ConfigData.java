@@ -1,10 +1,12 @@
 package net.nerjal.keepInventory.config;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.command.ServerCommandSource;
-import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
 import net.nerjal.keepInventory.Runnable;
 
 import java.util.Arrays;
@@ -13,7 +15,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static net.nerjal.keepInventory.ConditionalKeepInventoryMod.*;
+import static net.nerjal.keepInventory.ConditionalKeepInventoryMod.BoolObj;
+import static net.nerjal.keepInventory.ConditionalKeepInventoryMod.LOGGER;
 
 public class ConfigData {
     private boolean toggle;
@@ -28,10 +31,12 @@ public class ConfigData {
             new Runnable() {
                 @Override
                 public void run(Object[] args) throws Exception {
-                    if (! (args[0] instanceof JsonObject json)) return;
+                    if (! (args[0] instanceof JsonObject)) return;
+                    JsonObject json = (JsonObject) args[0];
                     if (json.has("version")) return;
                     json.getAsJsonArray("whitelist").forEach(elem -> {
-                        if (elem instanceof JsonObject elemObj) {
+                        if (elem instanceof JsonObject) {
+                            JsonObject elemObj = (JsonObject) elem;
                             elemObj.add("attacker",elemObj.get("killer_entity"));
                             elemObj.add("weapon",elemObj.get("held_item"));
                             elemObj.remove("killer_entity");
@@ -39,7 +44,8 @@ public class ConfigData {
                         }
                     });
                     json.getAsJsonArray("blacklist").forEach(elem -> {
-                        if (elem instanceof JsonObject elemObj) {
+                        if (elem instanceof JsonObject) {
+                            JsonObject elemObj = (JsonObject) elem;
                             elemObj.add("attacker",elemObj.get("killer_entity"));
                             elemObj.add("weapon",elemObj.get("held_item"));
                             elemObj.remove("killer_entity");

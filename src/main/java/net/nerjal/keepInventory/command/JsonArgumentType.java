@@ -18,15 +18,15 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * A class for JSON command arguments in Minecraft command-lines.
- * It allows to obtain a {@link com.google.gson.JsonObject} object when executing the command
+ * It allows to obtain a {@link JsonObject} object when executing the command
  * Warning! it uses the GreedyString process, and therefore will take all the end of the command
  *
  * @author Nerjal Nosk
  */
 public class JsonArgumentType implements ArgumentType<JsonObject> {
-    private Set<String> possibleKeys = new HashSet<>();
-    private Set<String> requiredKeys = new HashSet<>();
-    private Set<String> unwantedKeys = new HashSet<>();
+    private final Set<String> possibleKeys = new HashSet<>();
+    private final Set<String> requiredKeys = new HashSet<>();
+    private final Set<String> unwantedKeys = new HashSet<>();
     private final Map<String,JsonPropertyType> typedKeys = new HashMap<>();
     private boolean restrictToPossible = false;
     private boolean useRequired = false;
@@ -63,19 +63,23 @@ public class JsonArgumentType implements ArgumentType<JsonObject> {
     }
 
     private void setPossibleKeys(Collection<String> possibleKeys) {
-        this.possibleKeys = Set.copyOf(possibleKeys);
+        this.possibleKeys.clear();
+        this.possibleKeys.addAll(possibleKeys);
     }
 
     private void setRequiredKeys(Collection<String> requiredKeys) {
-        this.requiredKeys = Set.copyOf(requiredKeys);
+        this.requiredKeys.clear();
+        this.requiredKeys.addAll(requiredKeys);
     }
 
     private void setUnwantedKeys(Collection<String> unwantedKeys) {
-        this.unwantedKeys = Set.copyOf(unwantedKeys);
+        this.unwantedKeys.clear();
+        this.unwantedKeys.addAll(unwantedKeys);
     }
 
     public JsonArgumentType addPossibleKeys(Collection<String> keys) {
-        this.possibleKeys = Set.copyOf(keys);
+        this.possibleKeys.clear();
+        this.possibleKeys.addAll(keys);
         return this;
     }
 
@@ -167,7 +171,7 @@ public class JsonArgumentType implements ArgumentType<JsonObject> {
             JsonObject json = (JsonObject) new JsonParser().parse(text);
 
             if (this.useRequired) { // check parsing for missing required keys if need be
-                Set<String> required = new HashSet<>(Set.copyOf(this.requiredKeys));
+                Set<String> required = new HashSet<>(this.requiredKeys);
                 json.entrySet().forEach(e -> required.remove(e.getKey()));
                 if (!required.isEmpty()) throw PARSE_ERROR.create(String.format("missing required keys \"%s\"",String.join("\", \"",required)));
             }

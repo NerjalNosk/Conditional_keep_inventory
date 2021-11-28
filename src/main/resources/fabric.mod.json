@@ -10,14 +10,14 @@
   "contact": {
     "email": "nosk.nerjal@gmx.com",
     "discord": "329574958332248074",
-    "sources": "https://github.com/NerjalNosk/Conditional_keep_inventory",
+    "sources": "https://github.com/NerjalNosk/Conditional_keep_inventory/tree/1.16",
     "issues": "https://github.com/NerjalNosk/Conditional_keep_inventory/issues"
   },
   "breaks": {
     "fabric": "<0.30.0"
   },
   "license": "MIT",
-  "icon": "assets/conditional_keepinventory/icon.png",
+  "icon": "assets/conditional_keep_inventory/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
@@ -29,9 +29,8 @@
   ],
   "depends": {
     "fabric-resource-loader-v0": "*",
-    "fabric-screen-api-v1": ">=1.0.4",
     "fabricloader": ">=0.11.6",
-    "minecraft": ">=1.17-"
+    "minecraft": ">=1.16-"
   },
   "custom": {
     "modmenu": {

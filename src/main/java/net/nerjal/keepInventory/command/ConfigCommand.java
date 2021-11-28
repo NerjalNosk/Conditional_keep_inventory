@@ -2,6 +2,7 @@ package net.nerjal.keepInventory.command;
 
 import com.google.gson.JsonObject;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
@@ -17,21 +18,23 @@ import net.nerjal.keepInventory.config.ConfigElem;
 import net.nerjal.keepInventory.config.ListComparator;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
-import static net.minecraft.server.command.CommandManager.*;
-import static com.mojang.brigadier.arguments.BoolArgumentType.*;
-import static com.mojang.brigadier.arguments.IntegerArgumentType.*;
-import static net.nerjal.keepInventory.command.CKIListArgumentType.*;
+import static com.mojang.brigadier.arguments.BoolArgumentType.bool;
+import static com.mojang.brigadier.arguments.BoolArgumentType.getBool;
+import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
+import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
+import static net.minecraft.server.command.CommandManager.argument;
+import static net.minecraft.server.command.CommandManager.literal;
+import static net.nerjal.keepInventory.ConditionalKeepInventoryMod.*;
+import static net.nerjal.keepInventory.command.CKIListArgumentType.list;
 import static net.nerjal.keepInventory.command.JsonArgumentType.*;
 
-import static net.nerjal.keepInventory.ConditionalKeepInventoryMod.*;
-
 public class ConfigCommand {
+    private static final String[] possibleKeys = {"toggle","attacker","source","projectile","weapon","dimension","head","chest","legs","feet","hand_1","hand_2"};
     public static void register(@NotNull CommandDispatcher<ServerCommandSource> dispatcher, Runnable toggleStart) {
+        List<String> pKeys = new ArrayList<>();
+        Collections.addAll(pKeys, possibleKeys);
         CommandNode<ServerCommandSource> rootCommand = dispatcher.register(literal("conditionalkeepinventory")
                 .requires((source -> source.hasPermissionLevel(2)))
                 .executes(context -> info(context.getSource()))
@@ -46,7 +49,7 @@ public class ConfigCommand {
                         .then(argument("list",list())
                                 .then(argument("data",
                                         json()
-                                                .addPossibleKeys(List.of("toggle","attacker","source","projectile","weapon","dimension"))
+                                                .addPossibleKeys(pKeys)
                                                 .enablePossibleKeysRestriction()
                                                 .addTypedKey("toggle",JsonPropertyType.BOOLEAN))
                                         .executes(ConfigCommand::add)
@@ -56,7 +59,7 @@ public class ConfigCommand {
                                 .then(argument("id",integer())
                                         .then(argument("data",
                                                 json()
-                                                        .addPossibleKeys(List.of("toggle","attacker","source","projectile","weapon","dimension","head","chest","legs","feet","hand_1","hand_2"))
+                                                        .addPossibleKeys(pKeys)
                                                         .enablePossibleKeysRestriction()
                                                         .addTypedKey("toggle",JsonPropertyType.BOOLEAN))
                                                 .executes(ConfigCommand::edit)
@@ -83,11 +86,40 @@ public class ConfigCommand {
                                 .then(argument("state",bool())
                                         .executes(context -> toggleStartupBackup(toggleStart,context)))))
         );
+        buildRedirect("cki",rootCommand);
         dispatcher.register(literal("cki")
-                .executes(context -> info(context.getSource()))
-                .redirect(rootCommand)
+                //.executes(context -> info(context.getSource()))
+                .forward(rootCommand,null,false)
         );
     }
+
+    /**
+     * Returns a literal node that redirects its execution to the given destination node.<br>
+     *
+     * Method freely taken from <a href="https://github.com/PaperMC/Velocity">Velocity</a> (since I couldn't manage to do it myself)
+     * @see <a href="https://github.com/PaperMC/Velocity/blob/8abc9c80a69158ebae0121fda78b55c865c0abad/proxy/src/main/java/com/velocitypowered/proxy/util/BrigadierUtils.java#L38">Velocity</a>
+     * @param alias literal of the alias (in-game alias command)
+     * @param destination CommandNode to execute from the alias
+     * @return the CommandNode of the built alias
+     */
+    public static CommandNode<ServerCommandSource> buildRedirect(
+            final String alias, final CommandNode<ServerCommandSource> destination) {
+        // Redirects only work for nodes with children, but break the top argument-less command.
+        // Manually adding the root command after setting the redirect doesn't fix it.
+        // See https://github.com/Mojang/brigadier/issues/46). Manually clone the node instead.
+        LiteralArgumentBuilder<ServerCommandSource> builder = LiteralArgumentBuilder
+                .<ServerCommandSource>literal(alias.toLowerCase(Locale.ENGLISH))
+                .requires(destination.getRequirement())
+                .forward(
+                        destination.getRedirect(), destination.getRedirectModifier(), destination.isFork())
+                .executes(destination.getCommand());
+        for (CommandNode<ServerCommandSource> child : destination.getChildren()) {
+            builder.then(child);
+        }
+        return builder.build();
+    }
+
+
     private static int info(@NotNull ServerCommandSource source) throws CommandSyntaxException {
         source.getPlayer().sendMessage(new LiteralText("§2######### The Conditional Keep Inventory Mod! #########"),false);
         source.getPlayer().sendMessage(
@@ -316,10 +348,10 @@ public class ConfigCommand {
         return 1;
     }
     private static int toggleStartupBackup(Runnable runnable, CommandContext<ServerCommandSource> context) {
-        Object[] args = {new ConditionalKeepInventoryMod.BoolObj(getBool(context,"state"))};
+        Object[] args = {new BoolObj(getBool(context,"state"))};
         try {
             runnable.run(args);
-            context.getSource().sendFeedback(new LiteralText(String.format("Startup backup config set to %s",((ConditionalKeepInventoryMod.BoolObj)args[0]).value)),true);
+            context.getSource().sendFeedback(new LiteralText(String.format("Startup backup config set to %s",((BoolObj)args[0]).value)),true);
         } catch (Exception e) {
             context.getSource().sendError(new LiteralText("Error trying to change the config data"));
             return  1;

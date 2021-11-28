@@ -4,14 +4,20 @@ import com.google.gson.*;
 import net.minecraft.server.command.ServerCommandSource;
 import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-
-import java.util.*;
 
 public class ConfigFileManager {
 
@@ -122,11 +128,13 @@ public class ConfigFileManager {
             JsonArray array = json.getAsJsonArray();
             out.append("[\n");
             for (int i = 0;i<array.size();i++) {
-                out.append("  ".repeat(spacing)).append(parseJson(array.get(i), spacing));
+                for (int k = 0; k < spacing; k++) out.append("  ");
+                out.append(parseJson(array.get(i), spacing));
                 if (i+1 < array.size()) out.append(",");
                 out.append("\n");
             }
-            out.append("  ".repeat(space)).append("]");
+            for (int k = 0; k < space; k++) out.append("  ");
+            out.append("]");
             return out.toString();
         }
         if (json.isJsonObject()) {
@@ -134,10 +142,12 @@ public class ConfigFileManager {
             out.append("{\n");
             for (Map.Entry<String,JsonElement> entry : object.entrySet()) {
                 JsonElement elem = entry.getValue();
-                out.append("  ".repeat(spacing)).append(String.format("\"%s\"",entry.getKey())).append(" : ").append(parseJson(elem,spacing)).append(",\n");
+                for (int k = 0; k < spacing; k++) out.append("  ");
+                out.append(String.format("\"%s\"",entry.getKey())).append(" : ").append(parseJson(elem,spacing)).append(",\n");
             }
             out.deleteCharAt(out.lastIndexOf(","));
-            out.append("  ".repeat(space)).append("}");
+            for (int k = 0; k < space; k++) out.append("  ");
+            out.append("}");
             return out.toString();
         }
         return "";

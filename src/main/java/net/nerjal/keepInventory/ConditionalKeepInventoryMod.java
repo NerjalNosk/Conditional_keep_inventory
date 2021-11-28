@@ -15,8 +15,8 @@ import net.minecraft.world.GameRules;
 import net.nerjal.keepInventory.command.ConfigCommand;
 import net.nerjal.keepInventory.config.ConfigData;
 import net.nerjal.keepInventory.config.ConfigElem;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,7 +39,9 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
         conditionalDoVanishing = GameRuleRegistry.register("conditionalDoVanishing", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
         Runnable toggleStartBackup = (Object[] args) -> {
             if (args.length==0) throw new Exception("Invalid toggle state");
-            if (!(Arrays.stream(args).iterator().next() instanceof BoolObj state)) throw new Exception("Invalid toggle state");
+            Object obj = Arrays.stream(args).iterator().next();
+            if (!(obj instanceof BoolObj)) throw new Exception("Invalid toggle state");
+            BoolObj state = (BoolObj) obj;
             if (state.value) config.enableStartBackup();
             else config.disableStartBackup();
         };
