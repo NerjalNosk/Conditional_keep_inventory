@@ -86,11 +86,8 @@ public class ConfigCommand {
                                 .then(argument("state",bool())
                                         .executes(context -> toggleStartupBackup(toggleStart,context)))))
         );
-        buildRedirect("cki",rootCommand);
-        dispatcher.register(literal("cki")
-                //.executes(context -> info(context.getSource()))
-                .forward(rootCommand,null,false)
-        );
+        //buildRedirect("cki",rootCommand);
+        dispatcher.register(buildRedirect("cki",rootCommand));
     }
 
     /**
@@ -102,7 +99,7 @@ public class ConfigCommand {
      * @param destination CommandNode to execute from the alias
      * @return the CommandNode of the built alias
      */
-    public static CommandNode<ServerCommandSource> buildRedirect(
+    public static LiteralArgumentBuilder<ServerCommandSource> buildRedirect(
             final String alias, final CommandNode<ServerCommandSource> destination) {
         // Redirects only work for nodes with children, but break the top argument-less command.
         // Manually adding the root command after setting the redirect doesn't fix it.
@@ -116,7 +113,7 @@ public class ConfigCommand {
         for (CommandNode<ServerCommandSource> child : destination.getChildren()) {
             builder.then(child);
         }
-        return builder.build();
+        return builder;
     }
 
 
