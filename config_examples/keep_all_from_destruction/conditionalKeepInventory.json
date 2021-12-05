@@ -1,0 +1,45 @@
+{
+  "enabled" : true,
+  "doVanishingCurse" : true,
+  "doBackupOnStartup" : false,
+  "version" : 1,
+  "whitelist" : [
+    {
+      "id" : 1,
+      "toggle" : true,
+      "source" : "lava"
+    },
+    {
+      "id" : 2,
+      "toggle" : true,
+      "source" : "infire"
+    },
+    {
+      "id" : 3,
+      "toggle" : true,
+      "source" : "lightningbolt"
+    },
+    {
+      "id" : 4,
+      "toggle" : true,
+      "source" : "outofworld"
+    },
+    {
+      "id" : 5,
+      "toggle" : true,
+      "source" : "cactus"
+    },
+    {
+      "id" : 6,
+      "toggle" : true,
+      "attacker" : "creeper"
+    },
+    {
+      "id" : 7,
+      "toggle" : true,
+      "attacker" : "wither"
+    }
+  ],
+  "blacklist" : [
+  ]
+}
