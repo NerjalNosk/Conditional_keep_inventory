@@ -1,4 +1,4 @@
-package net.nerjal.keepInventory.mixins;
+package com.nerjal.keepInventory.mixins;
 
 import net.minecraft.entity.EntityType;
 //import net.minecraft.entity.ExperienceOrbEntity;
@@ -10,8 +10,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
-import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
-import net.nerjal.keepInventory.Validation;
+import com.nerjal.keepInventory.ConditionalKeepInventoryMod;
+import com.nerjal.keepInventory.Validation;
 import org.spongepowered.asm.mixin.Mixin;
 //import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Shadow;

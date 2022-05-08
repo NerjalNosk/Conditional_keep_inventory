@@ -1,19 +1,17 @@
-package net.nerjal.keepInventory.config;
+package com.nerjal.keepInventory.config;
 
 import com.google.gson.*;
+import com.nerjal.keepInventory.ConditionalKeepInventoryMod;
+import com.nerjal.keepInventory.Runnable;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.command.ServerCommandSource;
-import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
-import net.nerjal.keepInventory.Runnable;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static net.nerjal.keepInventory.ConditionalKeepInventoryMod.*;
 
 public class ConfigData {
     private boolean toggle;
@@ -52,13 +50,14 @@ public class ConfigData {
 
     public static final ConfigData DEFAULT = new ConfigData(true,true,new HashSet<>(),new HashSet<>(),false);
 
-    public ConfigData(boolean toggle, boolean curse, Set<ConfigElem> whitelist, Set<ConfigElem> blacklist, boolean backupOnStartup) {
+    private ConfigData(boolean toggle, boolean curse, Set<ConfigElem> whitelist, Set<ConfigElem> blacklist, boolean backupOnStartup) {
         this.toggle = toggle;
         this.curse = curse;
         this.whitelist = whitelist;
         this.blacklist = blacklist;
         this.backupOnStartup = backupOnStartup;
     }
+
     public static ConfigData readFile(ServerCommandSource source) {
         return ConfigFileManager.readConfig(source);
     }
@@ -72,7 +71,7 @@ public class ConfigData {
         try {
             debug = config.get("debug").getAsBoolean();
         } catch (JsonParseException|NullPointerException e) {
-            LOGGER.info("CKI Debug off");
+            ConditionalKeepInventoryMod.LOGGER.info("CKI Debug off");
         }
         Set<ConfigElem> enabled = new HashSet<>();
         Set<ConfigElem> disabled = new HashSet<>();
@@ -103,7 +102,7 @@ public class ConfigData {
         } catch ( JsonParseException|NullPointerException e) {
             ver = 0;
         }
-        if (debug) LOGGER.debug(String.format("JSON version: %d",ver));
+        if (debug) ConditionalKeepInventoryMod.LOGGER.debug(String.format("JSON version: %d",ver));
         Object[] args = {json};
         while (ver < lastVersion) {
             try {
@@ -287,15 +286,15 @@ public class ConfigData {
         } else out.append(".");
         return out.toString();
     }
-    public BoolObj toggleWhitelist(int id) {
+    public ConditionalKeepInventoryMod.BoolObj toggleWhitelist(int id) {
         for (ConfigElem elem : this.whitelist) {
-            if (elem.getId() == id) return new BoolObj(elem.toggle());
+            if (elem.getId() == id) return new ConditionalKeepInventoryMod.BoolObj(elem.toggle());
         }
         return null;
     }
-    public BoolObj toggleBlacklist(int id) {
+    public ConditionalKeepInventoryMod.BoolObj toggleBlacklist(int id) {
         for (ConfigElem elem : this.blacklist) {
-            if (elem.getId() == id) return new BoolObj(elem.toggle());
+            if (elem.getId() == id) return new ConditionalKeepInventoryMod.BoolObj(elem.toggle());
         }
         return null;
     }

@@ -1,20 +1,23 @@
-package net.nerjal.keepInventory;
+package com.nerjal.keepInventory;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.resource.ResourceType;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.GameRules;
-import net.nerjal.keepInventory.command.ConfigCommand;
-import net.nerjal.keepInventory.config.ConfigData;
-import net.nerjal.keepInventory.config.ConfigElem;
+import com.nerjal.keepInventory.command.ConfigCommand;
+import com.nerjal.keepInventory.config.ConfigData;
+import com.nerjal.keepInventory.config.ConfigElem;
+import com.nerjal.keepInventory.config.data.CkiResourceReloadListener;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -35,11 +38,17 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
     @Override
     public void onInitialize() {
         LOGGER.info("Twisting the death drops");
-        conditionalKeepInventoryRule = GameRuleRegistry.register("conditionalKeepInventory", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
-        conditionalDoVanishing = GameRuleRegistry.register("conditionalDoVanishing", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
+        ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new CkiResourceReloadListener());
+        conditionalKeepInventoryRule = GameRuleRegistry.register(
+                "conditionalKeepInventory",
+                GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
+        conditionalDoVanishing = GameRuleRegistry.register(
+                "conditionalDoVanishing",
+                GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
         Runnable toggleStartBackup = (Object[] args) -> {
             if (args.length==0) throw new Exception("Invalid toggle state");
-            if (!(Arrays.stream(args).iterator().next() instanceof BoolObj state)) throw new Exception("Invalid toggle state");
+            if (!(Arrays.stream(args).iterator().next() instanceof BoolObj state))
+                throw new Exception("Invalid toggle state");
             if (state.value) config.enableStartBackup();
             else config.disableStartBackup();
         };
@@ -52,7 +61,8 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
             server.getOverworld().getGameRules().get(conditionalDoVanishing).set(doCurse(),server);
             LOGGER.info("Aligning gamerule and config");
             if (config.doStartBackup()) {
-                if (config.backupConfig(null)) LOGGER.info("Made a backup of the ConditionalKeepInventory config file");
+                if (config.backupConfig(null))
+                    LOGGER.info("Made a backup of the ConditionalKeepInventory config file");
                 else LOGGER.info("Couldn't achieve making a backup of the ConditionalKeepInventory config file");
             }
             started = true;

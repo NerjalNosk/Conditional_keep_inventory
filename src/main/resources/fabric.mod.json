@@ -21,7 +21,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.nerjal.keepInventory.ConditionalKeepInventoryMod"
+      "com.nerjal.keepInventory.ConditionalKeepInventoryMod"
     ]
   },
   "mixins": [

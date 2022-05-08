@@ -1,4 +1,4 @@
-package net.nerjal.keepInventory;
+package com.nerjal.keepInventory;
 
 public enum Validation {
     WHITELIST ("Blacklist"),
