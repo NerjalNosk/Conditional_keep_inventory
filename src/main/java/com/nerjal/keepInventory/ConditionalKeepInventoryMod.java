@@ -5,10 +5,8 @@ import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.resource.ResourceType;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -17,7 +15,6 @@ import net.minecraft.world.GameRules;
 import com.nerjal.keepInventory.command.ConfigCommand;
 import com.nerjal.keepInventory.config.ConfigData;
 import com.nerjal.keepInventory.config.ConfigElem;
-import com.nerjal.keepInventory.config.data.CkiResourceReloadListener;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -38,7 +35,6 @@ public class ConditionalKeepInventoryMod implements ModInitializer {
     @Override
     public void onInitialize() {
         LOGGER.info("Twisting the death drops");
-        ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new CkiResourceReloadListener());
         conditionalKeepInventoryRule = GameRuleRegistry.register(
                 "conditionalKeepInventory",
                 GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
