@@ -1,4 +1,4 @@
-package net.nerjal.keepInventory.config;
+package com.nerjal.keepInventory.config;
 
 public enum ListComparator {
     Whitelist (1),

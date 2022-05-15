@@ -1,9 +1,10 @@
-package net.nerjal.keepInventory.config;
+package com.nerjal.keepInventory.config;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.nerjal.keepInventory.ConditionalKeepInventoryMod;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -13,7 +14,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
-import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
 
 import java.util.*;
 

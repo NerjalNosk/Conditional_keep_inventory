@@ -1,8 +1,10 @@
-package net.nerjal.keepInventory.config;
+package com.nerjal.keepInventory.config;
 
 import com.google.gson.*;
+import com.nerjal.keepInventory.ConditionalKeepInventoryMod;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.server.command.ServerCommandSource;
-import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -17,33 +19,54 @@ public class ConfigFileManager {
 
     private static final JsonParser parser = new JsonParser();
 
+    static final Text load_success = new LiteralText("Config successfully (re)loaded from file");
+    static final Text load_fileNotFound = new LiteralText("ConditionalKeepInventory config file not found. " +
+            "Creating a new one");
+    static final Text load_readErrBackup = new LiteralText("ConditionalKeepInventory config file empty or " +
+            "incorrect, created a backup and rewriting raw one");
+    static final Text backup_createErr = new LiteralText("Failed creating a backup of the " +
+            "ConditionalKeepInventory config file");
+    static final Text load_parseErr = new LiteralText("Error while parsing the ConditionalKeepInventory file. " +
+            "File might be corrupted or misformated. As a result, an empty config is being loaded.");
+    static final Text load_parseErrWarn = new LiteralText("Warning! editing the config via command will " +
+            "overwrite the file! Do a backup before saving anything!");
+    static final Text write_success = new LiteralText("Successfully wrote the config file from given data");
+    static final Text write_err = new LiteralText("Error while trying to write the config file. " +
+            "Please check manually for any problem");
+
     public static ConfigData readConfig(ServerCommandSource commandSource) {
         try {
-            FileReader file = new FileReader("config/conditionalKeepInventory.json");
+            File f = new File("config/conditionalKeepInventory.json");
+            if (!f.isFile()) if (!f.mkdirs()) {
+                throw new IOException("Unable to create the 'config' dir");
+            }
+            FileReader file = new FileReader(f);
             JsonObject config = (JsonObject) parser.parse(file);
             file.close();
 
             ConfigData t = ConfigData.fromJson(config);
 
-            ConditionalKeepInventoryMod.broadcastOp("Config successfully (re)loaded from file",commandSource);
+            ConditionalKeepInventoryMod.broadcastOp(load_success,commandSource);
 
             return t;
 
         } catch (IOException e) {
 
-            ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file not found. Creating a new one",commandSource);
+            ConditionalKeepInventoryMod.broadcastOp(load_fileNotFound,commandSource);
             ConfigData.DEFAULT.updateConfig(commandSource);
+            return ConfigData.DEFAULT;
 
         } catch (ClassCastException e) {
 
-            if (backupConfig(commandSource)) ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file empty or incorrect, created a backup and rewriting raw one",commandSource);
-            else ConditionalKeepInventoryMod.broadcastOp("ConditionalKeepInventory config file empty or incorrect, failed creating a backup, rewriting raw one",commandSource);
+            if (backupConfig(commandSource)) ConditionalKeepInventoryMod.broadcastOp(load_readErrBackup,commandSource);
+            else ConditionalKeepInventoryMod.broadcastOp(backup_createErr,commandSource);
             ConfigData.DEFAULT.updateConfig(commandSource);
+            return ConfigData.DEFAULT;
 
         } catch (JsonParseException e) {
 
-            ConditionalKeepInventoryMod.broadcastOp("Error while parsing the config file. Loading with raw config",commandSource);
-            ConditionalKeepInventoryMod.broadcastOp("Warning: edit the config via command will overwrite the wrong config! Do a backup before Saving anything",commandSource);
+            ConditionalKeepInventoryMod.broadcastOp(load_parseErr,commandSource);
+            ConditionalKeepInventoryMod.broadcastOp(load_parseErrWarn,commandSource);
         }
         return ConfigFileManager.readConfig(commandSource);
     }
@@ -54,9 +77,9 @@ public class ConfigFileManager {
             String configStr = parseJson(config);
             file.write(configStr);
             file.close();
-            ConditionalKeepInventoryMod.broadcastOp("Successfully wrote the config file from given data",commandSource);
+            ConditionalKeepInventoryMod.broadcastOp(write_success,commandSource);
         } catch (IOException e) {
-            ConditionalKeepInventoryMod.broadcastOp("Error while trying to write the config file. Please check manually for any problem",commandSource);
+            ConditionalKeepInventoryMod.broadcastOp(write_err,commandSource);
             ConditionalKeepInventoryMod.LOGGER.error(e);
         }
     }
@@ -134,7 +157,8 @@ public class ConfigFileManager {
             out.append("{\n");
             for (Map.Entry<String,JsonElement> entry : object.entrySet()) {
                 JsonElement elem = entry.getValue();
-                out.append("  ".repeat(spacing)).append(String.format("\"%s\"",entry.getKey())).append(" : ").append(parseJson(elem,spacing)).append(",\n");
+                out.append("  ".repeat(spacing)).append(String.format("\"%s\"",entry.getKey())).append(" : ")
+                        .append(parseJson(elem,spacing)).append(",\n");
             }
             out.deleteCharAt(out.lastIndexOf(","));
             out.append("  ".repeat(space)).append("}");

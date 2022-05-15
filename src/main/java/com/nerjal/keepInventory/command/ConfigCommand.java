@@ -1,4 +1,4 @@
-package net.nerjal.keepInventory.command;
+package com.nerjal.keepInventory.command;
 
 import com.google.gson.JsonObject;
 import com.mojang.brigadier.CommandDispatcher;
@@ -11,12 +11,13 @@ import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
-import net.nerjal.keepInventory.ConditionalKeepInventoryMod;
-import net.nerjal.keepInventory.Runnable;
-import net.nerjal.keepInventory.config.ConfigElem;
-import net.nerjal.keepInventory.config.ListComparator;
+import com.nerjal.keepInventory.ConditionalKeepInventoryMod;
+import com.nerjal.keepInventory.Runnable;
+import com.nerjal.keepInventory.config.ConfigElem;
+import com.nerjal.keepInventory.config.ListComparator;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -25,12 +26,12 @@ import java.util.Objects;
 import static net.minecraft.server.command.CommandManager.*;
 import static com.mojang.brigadier.arguments.BoolArgumentType.*;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.*;
-import static net.nerjal.keepInventory.command.CKIListArgumentType.*;
-import static net.nerjal.keepInventory.command.JsonArgumentType.*;
+import static com.nerjal.keepInventory.command.CKIListArgumentType.*;
+import static com.nerjal.keepInventory.command.JsonArgumentType.*;
 
-import static net.nerjal.keepInventory.ConditionalKeepInventoryMod.*;
+import static com.nerjal.keepInventory.ConditionalKeepInventoryMod.*;
 
-public class ConfigCommand {
+public class ConfigCommand implements Serializable {
     public static void register(@NotNull CommandDispatcher<ServerCommandSource> dispatcher, Runnable toggleStart) {
         CommandNode<ServerCommandSource> rootCommand = dispatcher.register(literal("conditionalkeepinventory")
                 .requires((source -> source.hasPermissionLevel(2)))

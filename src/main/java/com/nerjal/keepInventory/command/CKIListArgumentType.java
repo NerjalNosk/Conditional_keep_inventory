@@ -1,4 +1,4 @@
-package net.nerjal.keepInventory.command;
+package com.nerjal.keepInventory.command;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.ArgumentType;
@@ -12,11 +12,12 @@ import net.minecraft.text.LiteralText;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
-public class CKIListArgumentType implements ArgumentType<String> {
+public class CKIListArgumentType implements ArgumentType<String>, Serializable {
     private static final Collection<String> OPTIONS = Arrays.asList("Whitelist","Blacklist");
     private static final DynamicCommandExceptionType UNKNOWN_LIST = new DynamicCommandExceptionType((name) -> new LiteralText("No such list " + name));
 

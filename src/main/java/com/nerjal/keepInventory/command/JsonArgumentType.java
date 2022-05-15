@@ -1,4 +1,4 @@
-package net.nerjal.keepInventory.command;
+package com.nerjal.keepInventory.command;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;

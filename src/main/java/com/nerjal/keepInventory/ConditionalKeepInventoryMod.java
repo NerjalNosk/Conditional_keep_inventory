@@ -1,5 +1,6 @@
-package net.nerjal.keepInventory;
+package com.nerjal.keepInventory;
 
+import com.nerjal.keepInventory.command.ConfigCommand;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -12,9 +13,8 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.GameRules;
-import net.nerjal.keepInventory.command.ConfigCommand;
-import net.nerjal.keepInventory.config.ConfigData;
-import net.nerjal.keepInventory.config.ConfigElem;
+import com.nerjal.keepInventory.config.ConfigData;
+import com.nerjal.keepInventory.config.ConfigElem;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
